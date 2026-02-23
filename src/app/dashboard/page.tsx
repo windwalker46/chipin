@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { cancelPoolAction, signOutAction } from "@/app/actions";
+import { cancelPoolAction, signOutAction, startStripeConnectAction } from "@/app/actions";
 import { Countdown } from "@/components/countdown";
 import { ProgressBar } from "@/components/progress-bar";
 import { ScreenContainer } from "@/components/screen-container";
@@ -11,9 +10,11 @@ import { requireSessionUser } from "@/lib/auth";
 
 export default async function DashboardPage() {
   const { user, profile } = await requireSessionUser();
-  if (!profile.stripe_account_id || !profile.stripe_onboarding_complete || !profile.payouts_enabled) {
-    redirect("/onboarding/stripe");
-  }
+  const stripeReady =
+    !!profile.stripe_account_id &&
+    profile.stripe_onboarding_complete &&
+    profile.charges_enabled &&
+    profile.payouts_enabled;
 
   const pools = await listOrganizerPools(user.id);
   const active = pools.filter((p) => p.status === "active");
@@ -36,6 +37,22 @@ export default async function DashboardPage() {
       <Link href="/pools/new" className="chip-button mb-6">
         Create New Pool
       </Link>
+
+      {!stripeReady ? (
+        <section className="chip-card mb-6 space-y-3 p-4">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-[#0e7490]">Connect Stripe To Accept Payments</h2>
+          <p className="text-sm text-[#475569]">
+            You can create pools now. Connect Stripe before sharing to contributors so they can pay.
+          </p>
+          <form action={startStripeConnectAction}>
+            <button type="submit" className="chip-button">
+              Connect with Stripe
+            </button>
+          </form>
+        </section>
+      ) : (
+        <section className="chip-card mb-6 p-4 text-sm text-[#14532d]">Stripe connected. Contributors can pay your pools.</section>
+      )}
 
       <section className="space-y-3">
         <h2 className="text-sm font-bold uppercase tracking-wider text-[#0e7490]">Active Pools</h2>

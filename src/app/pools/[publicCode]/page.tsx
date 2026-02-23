@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { startStripeConnectAction } from "@/app/actions";
 import { Countdown } from "@/components/countdown";
 import { ProgressBar } from "@/components/progress-bar";
 import { ScreenContainer } from "@/components/screen-container";
@@ -26,6 +27,7 @@ export default async function OrganizerPoolView({
   const percent = formatPercent(pool.collected_amount_cents, pool.goal_amount_cents) ?? 0;
   const env = getServerEnv();
   const shareUrl = `${env.APP_URL}/join/${pool.public_code}`;
+  const stripeReady = !!pool.organizer_stripe_connected;
 
   return (
     <ScreenContainer>
@@ -53,6 +55,16 @@ export default async function OrganizerPoolView({
 
       <section className="chip-card mt-5 space-y-3 p-5">
         <h2 className="text-sm font-bold uppercase tracking-wider text-[#0e7490]">Share</h2>
+        {!stripeReady ? (
+          <div className="space-y-2 rounded-lg bg-[#ffedd5] p-3 text-sm text-[#7c2d12]">
+            <p>Connect Stripe before sharing. Contributors can view this pool but cannot pay yet.</p>
+            <form action={startStripeConnectAction}>
+              <button type="submit" className="rounded-lg border border-[#fdba74] bg-white px-3 py-2 text-sm font-semibold">
+                Connect with Stripe
+              </button>
+            </form>
+          </div>
+        ) : null}
         <ShareLink url={shareUrl} />
         <p className="truncate text-xs text-[#64748b]">{shareUrl}</p>
       </section>

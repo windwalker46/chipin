@@ -28,11 +28,7 @@ const createPoolSchema = z.object({
 });
 
 export async function createPoolAction(formData: FormData) {
-  const { user, profile } = await requireSessionUser();
-
-  if (!profile.stripe_account_id || !profile.stripe_onboarding_complete || !profile.payouts_enabled) {
-    redirect("/onboarding/stripe");
-  }
+  const { user } = await requireSessionUser();
 
   const parsed = createPoolSchema.parse({
     title: formData.get("title"),
