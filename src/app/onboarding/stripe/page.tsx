@@ -5,8 +5,13 @@ import { requireSessionUser } from "@/lib/auth";
 import { hasUsableStripeSecretKey, stripe } from "@/lib/stripe";
 import { updateOrganizerStripeState } from "@/lib/pools";
 
-export default async function StripeOnboardingPage() {
+export default async function StripeOnboardingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
   const { user, profile } = await requireSessionUser();
+  const { error } = await searchParams;
   let configError: string | null = null;
 
   if (!hasUsableStripeSecretKey()) {
@@ -28,6 +33,15 @@ export default async function StripeOnboardingPage() {
     } catch {
       configError = "Stripe account lookup failed. Verify STRIPE_SECRET_KEY and try again.";
     }
+  }
+
+  if (!configError && error === "platform-profile") {
+    configError =
+      "Stripe setup required: complete your Connect Platform Profile and accept loss responsibilities in Stripe Dashboard -> Settings -> Connect -> Platform profile.";
+  }
+
+  if (!configError && error === "stripe-api") {
+    configError = "Stripe request failed. Check Stripe dashboard settings and API keys, then try again.";
   }
 
   return (

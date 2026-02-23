@@ -69,39 +69,47 @@ export async function startStripeConnectAction() {
     redirect("/onboarding/stripe?error=stripe-not-configured");
   }
 
-  let accountId = profile.stripe_account_id;
-  if (!accountId) {
-    const account = await stripe.accounts.create({
-      type: "express",
-      country: "US",
-      email: user.email ?? undefined,
-      capabilities: {
-        card_payments: { requested: true },
-        transfers: { requested: true },
-      },
-      business_type: "individual",
-      metadata: { chipin_user_id: user.id },
+  try {
+    let accountId = profile.stripe_account_id;
+    if (!accountId) {
+      const account = await stripe.accounts.create({
+        type: "express",
+        country: "US",
+        email: user.email ?? undefined,
+        capabilities: {
+          card_payments: { requested: true },
+          transfers: { requested: true },
+        },
+        business_type: "individual",
+        metadata: { chipin_user_id: user.id },
+      });
+      accountId = account.id;
+    }
+
+    const account = await stripe.accounts.retrieve(accountId);
+    await updateOrganizerStripeState({
+      userId: user.id,
+      stripeAccountId: accountId,
+      stripeOnboardingComplete: !!account.details_submitted,
+      chargesEnabled: !!account.charges_enabled,
+      payoutsEnabled: !!account.payouts_enabled,
     });
-    accountId = account.id;
+
+    const accountLink = await stripe.accountLinks.create({
+      account: accountId,
+      refresh_url: `${env.APP_URL}/onboarding/stripe`,
+      return_url: `${env.APP_URL}/dashboard?stripe=connected`,
+      type: "account_onboarding",
+    });
+
+    redirect(accountLink.url);
+  } catch (error) {
+    const message = error instanceof Error ? error.message.toLowerCase() : "";
+    if (message.includes("responsibilities of managing losses")) {
+      redirect("/onboarding/stripe?error=platform-profile");
+    }
+    redirect("/onboarding/stripe?error=stripe-api");
   }
-
-  const account = await stripe.accounts.retrieve(accountId);
-  await updateOrganizerStripeState({
-    userId: user.id,
-    stripeAccountId: accountId,
-    stripeOnboardingComplete: !!account.details_submitted,
-    chargesEnabled: !!account.charges_enabled,
-    payoutsEnabled: !!account.payouts_enabled,
-  });
-
-  const accountLink = await stripe.accountLinks.create({
-    account: accountId,
-    refresh_url: `${env.APP_URL}/onboarding/stripe`,
-    return_url: `${env.APP_URL}/dashboard?stripe=connected`,
-    type: "account_onboarding",
-  });
-
-  redirect(accountLink.url);
 }
 
 const contributorSchema = z.object({
