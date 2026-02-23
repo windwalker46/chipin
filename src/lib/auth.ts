@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getOrganizerProfile, upsertProfileFromUser } from "@/lib/pools";
 
 export async function getSessionUser() {
   const supabase = await createSupabaseServerClient();
@@ -13,6 +12,8 @@ export async function requireSessionUser(redirectPath = "/auth/sign-in") {
   const user = await getSessionUser();
   if (!user) redirect(redirectPath);
 
+  // Lazy import avoids forcing DB/Stripe env parsing for routes that only need session checks.
+  const { upsertProfileFromUser, getOrganizerProfile } = await import("@/lib/pools");
   await upsertProfileFromUser(user);
   const profile = await getOrganizerProfile(user.id);
 
