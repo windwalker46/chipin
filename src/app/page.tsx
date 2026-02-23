@@ -1,23 +1,40 @@
 import Link from "next/link";
 import { ScreenContainer } from "@/components/screen-container";
+import { getSessionUser } from "@/lib/auth";
 
-export default function Home() {
+export default async function Home() {
+  const user = await getSessionUser();
+  const displayName =
+    (user?.user_metadata?.full_name as string | undefined) ??
+    (user?.user_metadata?.name as string | undefined) ??
+    (user?.email?.split("@")[0] ?? "Account");
+  const ctaHref = user ? "/dashboard" : "/auth/sign-in";
+
   return (
     <ScreenContainer>
       <header className="mb-12 flex items-center justify-between">
         <span className="rounded-full border border-[#bfdbfe] bg-white px-3 py-1 text-sm font-bold tracking-wide">
           CHIPIN
         </span>
-        <Link href="/auth/sign-in" className="rounded-lg border border-[#0e7490] px-3 py-2 text-sm font-semibold">
-          Sign In
-        </Link>
+        {user ? (
+          <Link href="/dashboard" className="flex items-center gap-2 rounded-lg border border-[#0e7490] px-3 py-2 text-sm font-semibold">
+            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#0e7490] text-xs font-bold text-white">
+              {displayName.charAt(0).toUpperCase()}
+            </span>
+            <span className="max-w-[8rem] truncate">{displayName}</span>
+          </Link>
+        ) : (
+          <Link href="/auth/sign-in" className="rounded-lg border border-[#0e7490] px-3 py-2 text-sm font-semibold">
+            Sign In
+          </Link>
+        )}
       </header>
 
       <section className="chip-card space-y-5 p-6">
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#155e75]">Group Orders, Zero Chasing</p>
         <h1 className="text-4xl font-black leading-tight">Split food orders instantly.</h1>
         <p className="text-base text-[#334155]">No chasing payments. No fronting money.</p>
-        <Link href="/auth/sign-in" className="chip-button">
+        <Link href={ctaHref} className="chip-button">
           Start a Food Pool
         </Link>
       </section>

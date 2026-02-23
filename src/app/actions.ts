@@ -14,7 +14,7 @@ import {
   updateOrganizerStripeState,
   upsertContributionPayment,
 } from "@/lib/pools";
-import { stripe } from "@/lib/stripe";
+import { hasUsableStripeSecretKey, stripe } from "@/lib/stripe";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const env = getServerEnv();
@@ -65,6 +65,9 @@ export async function createPoolAction(formData: FormData) {
 
 export async function startStripeConnectAction() {
   const { user, profile } = await requireSessionUser();
+  if (!hasUsableStripeSecretKey()) {
+    redirect("/onboarding/stripe?error=stripe-not-configured");
+  }
 
   let accountId = profile.stripe_account_id;
   if (!accountId) {
@@ -107,6 +110,10 @@ const contributorSchema = z.object({
 });
 
 export async function createCheckoutAction(publicCode: string, formData: FormData) {
+  if (!hasUsableStripeSecretKey()) {
+    redirect(`/join/${publicCode}?unavailable=1`);
+  }
+
   const parsed = contributorSchema.parse({
     contributorName: formData.get("contributorName"),
     amount: formData.get("amount"),
