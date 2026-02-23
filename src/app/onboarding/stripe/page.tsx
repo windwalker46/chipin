@@ -40,9 +40,27 @@ export default async function StripeOnboardingPage({
       "Stripe setup required: complete your Connect Platform Profile and accept loss responsibilities in Stripe Dashboard -> Settings -> Connect -> Platform profile.";
   }
 
+  if (!configError && error === "stripe-invalid-key") {
+    configError = "Invalid Stripe secret key. Set a valid STRIPE_SECRET_KEY in Vercel and redeploy.";
+  }
+
+  if (!configError && error === "stripe-mode-mismatch") {
+    configError =
+      "Stripe mode mismatch. Your key mode (test/live) does not match existing Stripe account resources.";
+  }
+
+  if (!configError && error === "stripe-connect-config") {
+    configError = "Stripe Connect setup is incomplete in your Stripe dashboard. Review Connect settings and retry.";
+  }
+
   if (!configError && error === "stripe-api") {
     configError = "Stripe request failed. Check Stripe dashboard settings and API keys, then try again.";
   }
+
+  const disableConnect =
+    !hasUsableStripeSecretKey() ||
+    error === "stripe-not-configured" ||
+    error === "stripe-invalid-key";
 
   return (
     <ScreenContainer>
@@ -51,7 +69,7 @@ export default async function StripeOnboardingPage({
         <p className="text-sm text-[#475569]">To receive payments, connect your Stripe account.</p>
         {configError ? <p className="rounded-lg bg-[#fee2e2] p-3 text-sm text-[#991b1b]">{configError}</p> : null}
         <form action={startStripeConnectAction}>
-          <button className="chip-button" type="submit" disabled={!!configError}>
+          <button className="chip-button" type="submit" disabled={disableConnect}>
             Connect with Stripe
           </button>
         </form>

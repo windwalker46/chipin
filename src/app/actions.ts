@@ -104,10 +104,31 @@ export async function startStripeConnectAction() {
 
     redirect(accountLink.url);
   } catch (error) {
+    // Next.js redirect() throws internally; never convert that into an API error redirect.
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "digest" in error &&
+      String((error as { digest: unknown }).digest).startsWith("NEXT_REDIRECT")
+    ) {
+      throw error;
+    }
+
     const message = error instanceof Error ? error.message.toLowerCase() : "";
     if (message.includes("responsibilities of managing losses")) {
       redirect("/onboarding/stripe?error=platform-profile");
     }
+    if (message.includes("invalid api key")) {
+      redirect("/onboarding/stripe?error=stripe-invalid-key");
+    }
+    if (message.includes("test mode key") || message.includes("live mode key")) {
+      redirect("/onboarding/stripe?error=stripe-mode-mismatch");
+    }
+    if (message.includes("connect")) {
+      redirect("/onboarding/stripe?error=stripe-connect-config");
+    }
+
+    console.error("startStripeConnectAction failed", error);
     redirect("/onboarding/stripe?error=stripe-api");
   }
 }
