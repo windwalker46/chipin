@@ -1,8 +1,19 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { ScreenContainer } from "@/components/screen-container";
 import { getSessionUser } from "@/lib/auth";
 
-export default async function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ code?: string; next?: string }>;
+}) {
+  const params = await searchParams;
+  if (params.code) {
+    const next = params.next && params.next.startsWith("/") ? params.next : "/dashboard";
+    redirect(`/auth/callback?code=${encodeURIComponent(params.code)}&next=${encodeURIComponent(next)}`);
+  }
+
   const user = await getSessionUser();
   const displayName =
     (user?.user_metadata?.full_name as string | undefined) ??
