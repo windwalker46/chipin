@@ -1,36 +1,60 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ChipIn Web (MVP)
 
-## Getting Started
+Mobile-first Next.js app for pooled food payments with Supabase + Stripe Connect.
 
-First, run the development server:
+## Requirements
+
+- Node 20+
+- Supabase project
+- Stripe account (platform + Connect enabled)
+
+## Environment
+
+Copy `.env.example` to `.env.local` and set:
+
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `STRIPE_SECRET_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+- `CRON_SHARED_SECRET`
+
+`DATABASE_URL` is already configured for your Supabase host; replace password if needed.
+
+## Run
 
 ```bash
+npm install
+npm run db:migrate
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Build Checks
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm run lint
+npm run build
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Implemented Screens
 
-## Learn More
+1. Landing (`/`)
+2. Organizer Sign In (`/auth/sign-in`)
+3. Connect Stripe (`/onboarding/stripe`)
+4. Dashboard (`/dashboard`)
+5. Create Pool (`/pools/new`)
+6. Organizer Pool View (`/pools/[publicCode]`)
+7. Contributor Join (`/join/[publicCode]`)
+8. Stripe Checkout (hosted)
+9. Contribution Success (`/join/[publicCode]/success`)
+10. Expired (`/join/[publicCode]/expired`)
+11. Funded (`/join/[publicCode]/funded`)
 
-To learn more about Next.js, take a look at the following resources:
+## API Routes
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- Stripe webhook: `POST /api/stripe/webhook`
+- Expiration/refund cron: `POST /api/jobs/expire-pools` with header `x-cron-secret`
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Notes
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Platform fee defaults to `2%` (`STRIPE_PLATFORM_FEE_BPS=200`).
+- Admin panel is available at `/admin` for emails listed in `ADMIN_EMAILS`.

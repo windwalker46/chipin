@@ -1,26 +1,83 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #f3f8f7;
+  --bg-card: #ffffff;
+  --ink: #0f172a;
+  --muted: #4b5563;
+  --brand: #0e7490;
+  --brand-dark: #155e75;
+  --danger: #b91c1c;
+  --ring: #67e8f9;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-background: var(--bg);
+  --color-foreground: var(--ink);
+  --font-sans: var(--font-space-grotesk);
+  --font-mono: var(--font-ibm-plex-mono);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  min-height: 100vh;
+  background:
+    radial-gradient(140% 90% at 0% 0%, #ddfbff 0%, transparent 55%),
+    radial-gradient(100% 80% at 100% 0%, #fef3c7 0%, transparent 45%),
+    var(--bg);
+  color: var(--ink);
+  font-family: var(--font-space-grotesk), sans-serif;
+}
+
+a {
+  color: inherit;
+}
+
+.chip-card {
+  border-radius: 1rem;
+  border: 1px solid #dbe7eb;
+  background: var(--bg-card);
+  box-shadow: 0 10px 30px rgba(2, 132, 199, 0.07);
+}
+
+.chip-button {
+  display: inline-flex;
+  min-height: 3rem;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  background: var(--brand);
+  padding-inline: 1rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #f8fafc;
+  transition: transform 120ms ease, opacity 120ms ease, background 120ms ease;
+}
+
+.chip-button:hover {
+  background: var(--brand-dark);
+}
+
+.chip-button:active {
+  transform: translateY(1px);
+}
+
+.chip-button-secondary {
+  background: #e2f3f6;
+  color: #0f172a;
+}
+
+.chip-input {
+  width: 100%;
+  border-radius: 0.75rem;
+  border: 1px solid #cfdbe1;
+  background: #fff;
+  padding: 0.7rem 0.8rem;
+  font-size: 0.95rem;
+  outline: none;
+}
+
+.chip-input:focus {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 30%, transparent);
 }
