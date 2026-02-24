@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ScreenContainer } from "@/components/screen-container";
 import { getSessionUser } from "@/lib/auth";
+import { normalizeNextPath } from "@/lib/navigation";
 
 export default async function Home({
   searchParams,
@@ -10,7 +11,7 @@ export default async function Home({
 }) {
   const params = await searchParams;
   if (params.code) {
-    const next = params.next && params.next.startsWith("/") ? params.next : "/dashboard";
+    const next = normalizeNextPath(params.next);
     redirect(`/auth/callback?code=${encodeURIComponent(params.code)}&next=${encodeURIComponent(next)}`);
   }
 

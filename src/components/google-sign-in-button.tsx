@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { normalizeNextPath } from "@/lib/navigation";
 
 export function GoogleSignInButton() {
   const [loading, setLoading] = useState(false);
@@ -11,7 +12,7 @@ export function GoogleSignInButton() {
   async function handleGoogle() {
     setLoading(true);
     const supabase = createSupabaseBrowserClient();
-    const next = params.get("next") || "/dashboard";
+    const next = normalizeNextPath(params.get("next"));
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",

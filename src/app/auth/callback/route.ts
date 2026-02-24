@@ -1,16 +1,11 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-
-function safeNextPath(nextValue: string | null) {
-  if (!nextValue || !nextValue.startsWith("/")) return "/dashboard";
-  if (nextValue.startsWith("//")) return "/dashboard";
-  return nextValue;
-}
+import { normalizeNextPath } from "@/lib/navigation";
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
-  const next = safeNextPath(requestUrl.searchParams.get("next"));
+  const next = normalizeNextPath(requestUrl.searchParams.get("next"));
 
   try {
     if (code) {
