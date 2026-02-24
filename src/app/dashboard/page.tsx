@@ -40,13 +40,14 @@ export default async function DashboardPage() {
 
       {!stripeReady ? (
         <section className="chip-card mb-6 space-y-3 p-4">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-[#0e7490]">Connect Stripe To Accept Payments</h2>
+          <h2 className="text-sm font-bold uppercase tracking-wider text-[#0e7490]">Enable Payments</h2>
           <p className="text-sm text-[#475569]">
-            You can create pools now. Connect Stripe before sharing to contributors so they can pay.
+            One-time Stripe setup takes about 2 minutes. You can keep creating pools while this is pending.
           </p>
           <form action={startStripeConnectAction}>
+            <input type="hidden" name="returnPath" value="/dashboard" />
             <button type="submit" className="chip-button">
-              Connect with Stripe
+              Enable Stripe Payouts
             </button>
           </form>
         </section>

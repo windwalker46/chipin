@@ -22,10 +22,11 @@ export default async function CreatePoolPage() {
         <h1 className="text-3xl font-black">Create Pool</h1>
         {!stripeReady ? (
           <div className="mt-4 space-y-2 rounded-lg bg-[#ffedd5] p-3 text-sm text-[#7c2d12]">
-            <p>Create your pool first, then connect Stripe before sharing payment link.</p>
+            <p>Create first, then enable payouts. Contributors cannot pay until Stripe is connected.</p>
             <form action={startStripeConnectAction}>
+              <input type="hidden" name="returnPath" value="/pools/new" />
               <button type="submit" className="rounded-lg border border-[#fdba74] bg-white px-3 py-2 text-sm font-semibold">
-                Connect Stripe now
+                Enable Stripe Payouts
               </button>
             </form>
           </div>

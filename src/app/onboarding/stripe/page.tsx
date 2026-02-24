@@ -65,12 +65,20 @@ export default async function StripeOnboardingPage({
   return (
     <ScreenContainer>
       <section className="chip-card space-y-5 p-6">
-        <h1 className="text-3xl font-black">Connect Stripe</h1>
-        <p className="text-sm text-[#475569]">To receive payments, connect your Stripe account.</p>
+        <h1 className="text-3xl font-black">Enable Stripe Payouts</h1>
+        <p className="text-sm text-[#475569]">
+          One-time setup so ChipIn can route contributions directly to your Stripe account.
+        </p>
+        <ul className="rounded-lg bg-[#ecfeff] p-3 text-xs text-[#155e75]">
+          <li>1. Review account details</li>
+          <li>2. Confirm payout info</li>
+          <li>3. Return to your pool dashboard</li>
+        </ul>
         {configError ? <p className="rounded-lg bg-[#fee2e2] p-3 text-sm text-[#991b1b]">{configError}</p> : null}
         <form action={startStripeConnectAction}>
+          <input type="hidden" name="returnPath" value="/dashboard" />
           <button className="chip-button" type="submit" disabled={disableConnect}>
-            Connect with Stripe
+            Continue to Stripe
           </button>
         </form>
       </section>

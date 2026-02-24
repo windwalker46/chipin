@@ -57,10 +57,11 @@ export default async function OrganizerPoolView({
         <h2 className="text-sm font-bold uppercase tracking-wider text-[#0e7490]">Share</h2>
         {!stripeReady ? (
           <div className="space-y-2 rounded-lg bg-[#ffedd5] p-3 text-sm text-[#7c2d12]">
-            <p>Connect Stripe before sharing. Contributors can view this pool but cannot pay yet.</p>
+            <p>Enable Stripe payouts before sharing. Contributors can view this pool but cannot pay yet.</p>
             <form action={startStripeConnectAction}>
+              <input type="hidden" name="returnPath" value={`/pools/${pool.public_code}`} />
               <button type="submit" className="rounded-lg border border-[#fdba74] bg-white px-3 py-2 text-sm font-semibold">
-                Connect with Stripe
+                Enable Stripe Payouts
               </button>
             </form>
           </div>

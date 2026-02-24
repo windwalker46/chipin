@@ -19,6 +19,27 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const env = getServerEnv();
 
+function normalizeReturnPath(pathValue: FormDataEntryValue | null) {
+  if (typeof pathValue !== "string") return "/dashboard";
+  if (!pathValue.startsWith("/")) return "/dashboard";
+  if (pathValue.startsWith("//")) return "/dashboard";
+  return pathValue;
+}
+
+function splitName(fullName: string | null) {
+  if (!fullName) return { firstName: undefined, lastName: undefined };
+  const parts = fullName
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  if (parts.length === 0) return { firstName: undefined, lastName: undefined };
+  if (parts.length === 1) return { firstName: parts[0], lastName: undefined };
+  return {
+    firstName: parts[0],
+    lastName: parts.slice(1).join(" "),
+  };
+}
+
 const createPoolSchema = z.object({
   title: z.string().trim().min(1).max(100),
   restaurantName: z.string().trim().max(100).optional(),
@@ -59,11 +80,19 @@ export async function createPoolAction(formData: FormData) {
   redirect(`/pools/${pool.public_code}`);
 }
 
-export async function startStripeConnectAction() {
+export async function startStripeConnectAction(formData: FormData) {
   const { user, profile } = await requireSessionUser();
   if (!hasUsableStripeSecretKey()) {
     redirect("/onboarding/stripe?error=stripe-not-configured");
   }
+
+  const returnPath = normalizeReturnPath(formData.get("returnPath"));
+  const refreshUrl = new URL(returnPath, env.APP_URL);
+  refreshUrl.searchParams.set("stripe", "retry");
+  const returnUrl = new URL(returnPath, env.APP_URL);
+  returnUrl.searchParams.set("stripe", "connected");
+
+  const { firstName, lastName } = splitName(profile.full_name);
 
   try {
     let accountId = profile.stripe_account_id;
@@ -77,6 +106,15 @@ export async function startStripeConnectAction() {
           transfers: { requested: true },
         },
         business_type: "individual",
+        business_profile: {
+          url: env.APP_URL,
+          product_description: "Group food order collection and split payments.",
+        },
+        individual: {
+          first_name: firstName,
+          last_name: lastName,
+          email: user.email ?? undefined,
+        },
         metadata: { chipin_user_id: user.id },
       });
       accountId = account.id;
@@ -93,9 +131,12 @@ export async function startStripeConnectAction() {
 
     const accountLink = await stripe.accountLinks.create({
       account: accountId,
-      refresh_url: `${env.APP_URL}/onboarding/stripe`,
-      return_url: `${env.APP_URL}/dashboard?stripe=connected`,
+      refresh_url: refreshUrl.toString(),
+      return_url: returnUrl.toString(),
       type: "account_onboarding",
+      collection_options: {
+        fields: "currently_due",
+      },
     });
 
     redirect(accountLink.url);
