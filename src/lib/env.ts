@@ -8,9 +8,6 @@ const publicEnvSchema = z.object({
 const serverEnvSchema = publicEnvSchema.extend({
   DATABASE_URL: z.string().min(1),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
-  STRIPE_SECRET_KEY: z.string().min(1),
-  STRIPE_WEBHOOK_SECRET: z.string().min(1),
-  STRIPE_PLATFORM_FEE_BPS: z.coerce.number().int().min(0).max(10000).default(200),
   APP_URL: z.string().url(),
   ADMIN_EMAILS: z.string().default(""),
   CRON_SHARED_SECRET: z.string().min(1),
@@ -22,7 +19,7 @@ function resolveAppUrl() {
     try {
       return new URL(rawAppUrl).toString().replace(/\/$/, "");
     } catch {
-      // Fall through to Vercel URL fallback.
+      return process.env.VERCEL_URL?.trim() ? `https://${process.env.VERCEL_URL.trim()}` : "http://localhost:3000";
     }
   }
 
@@ -49,9 +46,6 @@ export function getServerEnv() {
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     DATABASE_URL: process.env.DATABASE_URL,
     SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
-    STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
-    STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
-    STRIPE_PLATFORM_FEE_BPS: process.env.STRIPE_PLATFORM_FEE_BPS,
     APP_URL: resolveAppUrl(),
     ADMIN_EMAILS: process.env.ADMIN_EMAILS,
     CRON_SHARED_SECRET: process.env.CRON_SHARED_SECRET,

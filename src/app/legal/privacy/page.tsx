@@ -6,9 +6,9 @@ export default function PrivacyPage() {
     <ScreenContainer>
       <section className="chip-card space-y-4 p-6 text-sm">
         <h1 className="text-2xl font-black">Privacy</h1>
-        <p>ChipIn stores organizer account info, pool metadata, contribution records, and Stripe transaction identifiers.</p>
-        <p>Card details are handled by Stripe Checkout and are never stored by ChipIn.</p>
-        <p>Contributor names and amounts are displayed for pool transparency.</p>
+        <p>ChipIn stores account profile info, chip metadata, participant records, and objective completion events.</p>
+        <p>No card or banking information is collected in this product direction.</p>
+        <p>Participant names and objective status are displayed inside each chip for transparency.</p>
         <p>Contact support to request data deletion where legally permitted.</p>
         <Link href="/" className="text-[#155e75]">
           Back

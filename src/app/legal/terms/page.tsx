@@ -6,11 +6,11 @@ export default function TermsPage() {
     <ScreenContainer>
       <section className="chip-card space-y-4 p-6 text-sm">
         <h1 className="text-2xl font-black">Terms of Service</h1>
-        <p>ChipIn helps groups fund shared food orders. Organizers are responsible for fulfillment and distribution.</p>
-        <p>No alcohol sales, illegal activity, or prohibited transactions are allowed.</p>
-        <p>ChipIn is not liable for organizer-contributor disputes beyond payment processing and refunds.</p>
-        <p>If a pool fails by deadline, contributions are automatically refunded.</p>
-        <p>ChipIn does not store user balances or wallet credits.</p>
+        <p>ChipIn helps groups commit to shared goals and execute objective-based chips together.</p>
+        <p>No illegal activity, harassment, or harmful content is permitted.</p>
+        <p>Creators are responsible for the legitimacy of each chip and all related outcomes.</p>
+        <p>ChipIn may remove abusive chips or disable accounts that violate community rules.</p>
+        <p>ChipIn does not guarantee participant attendance, completion, or specific outcomes.</p>
         <Link href="/" className="text-[#155e75]">
           Back
         </Link>

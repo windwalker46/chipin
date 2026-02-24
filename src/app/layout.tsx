@@ -15,7 +15,7 @@ const ibmPlexMono = IBM_Plex_Mono({
 
 export const metadata: Metadata = {
   title: "ChipIn",
-  description: "Split food orders instantly.",
+  description: "Threshold and collective task engine.",
 };
 
 export default function RootLayout({

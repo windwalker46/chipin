@@ -16,10 +16,10 @@ export default async function SignInPage() {
         </Link>
       </div>
       <section className="chip-card space-y-5 p-6">
-        <h1 className="text-3xl font-black">Organizer Sign In</h1>
-        <p className="text-sm text-[#475569]">Use Google OAuth to create and manage pools. No manual passwords.</p>
+        <h1 className="text-3xl font-black">Creator Sign In</h1>
+        <p className="text-sm text-[#475569]">Use Google OAuth to create chips, invite participants, and run shared objectives.</p>
         <GoogleSignInButton />
-        <p className="text-xs text-[#64748b]">Optional email magic link can be added after launch.</p>
+        <p className="text-xs text-[#64748b]">No manual password flow in this demo.</p>
       </section>
     </ScreenContainer>
   );

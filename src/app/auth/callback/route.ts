@@ -20,9 +20,7 @@ export async function GET(request: Request) {
         return NextResponse.redirect(new URL(next, requestUrl.origin));
       }
     }
-  } catch {
-    // Fall through to sign-in error redirect.
-  }
+  } catch {}
 
   return NextResponse.redirect(new URL("/auth/sign-in?error=oauth", requestUrl.origin));
 }

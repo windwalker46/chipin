@@ -42,20 +42,20 @@ export default async function Home({
       </header>
 
       <section className="chip-card space-y-5 p-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#155e75]">Group Orders, Zero Chasing</p>
-        <h1 className="text-4xl font-black leading-tight">Split food orders instantly.</h1>
-        <p className="text-base text-[#334155]">No chasing payments. No fronting money.</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#155e75]">Threshold + Collective Task Engine</p>
+        <h1 className="text-4xl font-black leading-tight">Activate group momentum.</h1>
+        <p className="text-base text-[#334155]">If enough people commit, the chip activates. Then your group executes together.</p>
         <Link href={ctaHref} className="chip-button">
-          Start a Food Pool
+          Start a Chip
         </Link>
       </section>
 
       <section className="mt-8 chip-card p-6">
         <h2 className="text-sm font-bold uppercase tracking-widest text-[#0e7490]">How It Works</h2>
         <ol className="mt-4 space-y-3 text-base">
-          <li>1. Create pool</li>
-          <li>2. Share link</li>
-          <li>3. Everyone pays directly</li>
+          <li>1. Create a chip with threshold and deadline</li>
+          <li>2. Share the chip link and collect commitments</li>
+          <li>3. Auto-activate and complete objectives together</li>
         </ol>
       </section>
 

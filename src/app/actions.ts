@@ -3,281 +3,173 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { getServerEnv } from "@/lib/env";
-import { requireSessionUser } from "@/lib/auth";
+import { getSessionUser, requireSessionUser } from "@/lib/auth";
 import {
-  createPendingContribution,
-  createPool,
-  getPoolByCode,
-  insertPoolEvent,
-  setPoolStatus,
-  updateOrganizerStripeState,
-  upsertContributionPayment,
-} from "@/lib/pools";
-import { hasUsableStripeSecretKey, stripe } from "@/lib/stripe";
+  createChip,
+  getChipByCode,
+  getCreatorOpenChipCount,
+  getParticipantByName,
+  getParticipantByUser,
+  joinChip,
+  setChipStatus,
+  toggleObjectiveCompletion,
+} from "@/lib/chips";
+import { getProfile, upsertProfileFromUser } from "@/lib/profiles";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-const env = getServerEnv();
-
-function normalizeReturnPath(pathValue: FormDataEntryValue | null) {
-  if (typeof pathValue !== "string") return "/dashboard";
-  if (!pathValue.startsWith("/")) return "/dashboard";
-  if (pathValue.startsWith("//")) return "/dashboard";
-  return pathValue;
-}
-
-function splitName(fullName: string | null) {
-  if (!fullName) return { firstName: undefined, lastName: undefined };
-  const parts = fullName
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
-  if (parts.length === 0) return { firstName: undefined, lastName: undefined };
-  if (parts.length === 1) return { firstName: parts[0], lastName: undefined };
-  return {
-    firstName: parts[0],
-    lastName: parts.slice(1).join(" "),
-  };
-}
-
-const createPoolSchema = z.object({
-  title: z.string().trim().min(1).max(100),
-  restaurantName: z.string().trim().max(100).optional(),
-  goalAmount: z.coerce.number().min(0).optional(),
-  deadlineMinutes: z.coerce.number().int().min(5).max(180),
-  tipPercent: z.coerce.number().min(0).max(35).optional(),
+const createChipSchema = z.object({
+  title: z.string().trim().min(1).max(120),
+  description: z.string().trim().max(600).optional(),
+  thresholdCount: z.coerce.number().int().min(1).max(100),
+  deadlineMinutes: z.coerce.number().int().min(15).max(7 * 24 * 60),
+  isPrivate: z.coerce.boolean().optional(),
 });
 
-export async function createPoolAction(formData: FormData) {
-  const { user } = await requireSessionUser();
-
-  const parsed = createPoolSchema.parse({
-    title: formData.get("title"),
-    restaurantName: formData.get("restaurantName") ?? undefined,
-    goalAmount: formData.get("goalAmount") ?? undefined,
-    deadlineMinutes: formData.get("deadlineMinutes"),
-    tipPercent: formData.get("tipPercent") ?? undefined,
-  });
-
-  const goalAmountCents =
-    parsed.goalAmount && parsed.goalAmount > 0 ? Math.round(parsed.goalAmount * 100) : undefined;
-
-  const pool = await createPool({
-    organizerId: user.id,
-    title: parsed.title,
-    restaurantName: parsed.restaurantName || undefined,
-    goalAmountCents,
-    tipPercent: parsed.tipPercent ?? 0,
-    deadlineAt: new Date(Date.now() + parsed.deadlineMinutes * 60 * 1000),
-  });
-
-  await insertPoolEvent({
-    poolId: pool.id,
-    eventType: "pool_created",
-    metadata: { by: user.id },
-  });
-
-  redirect(`/pools/${pool.public_code}`);
+function cleanObjective(value: FormDataEntryValue | null) {
+  if (typeof value !== "string") return "";
+  return value.trim();
 }
 
-export async function startStripeConnectAction(formData: FormData) {
+function safePath(path: string | null) {
+  if (!path || !path.startsWith("/")) return "/dashboard";
+  if (path.startsWith("//")) return "/dashboard";
+  return path;
+}
+
+export async function createChipAction(formData: FormData) {
   const { user, profile } = await requireSessionUser();
-  if (!hasUsableStripeSecretKey()) {
-    redirect("/onboarding/stripe?error=stripe-not-configured");
+
+  const parsed = createChipSchema.parse({
+    title: formData.get("title"),
+    description: formData.get("description") ?? undefined,
+    thresholdCount: formData.get("thresholdCount"),
+    deadlineMinutes: formData.get("deadlineMinutes"),
+    isPrivate: formData.get("isPrivate") ? true : false,
+  });
+
+  const openCount = await getCreatorOpenChipCount(user.id);
+  if (openCount >= 1) {
+    redirect("/chips/new?error=free-limit");
   }
 
-  const returnPath = normalizeReturnPath(formData.get("returnPath"));
-  const refreshUrl = new URL(returnPath, env.APP_URL);
-  refreshUrl.searchParams.set("stripe", "retry");
-  const returnUrl = new URL(returnPath, env.APP_URL);
-  returnUrl.searchParams.set("stripe", "connected");
+  const objectives = [1, 2, 3, 4, 5]
+    .map((n) => ({
+      title: cleanObjective(formData.get(`objective${n}`)),
+      description: "",
+    }))
+    .filter((o) => o.title.length > 0);
 
-  const { firstName, lastName } = splitName(profile.full_name);
+  const chip = await createChip({
+    creatorId: user.id,
+    creatorDisplayName: profile.full_name ?? (user.email?.split("@")[0] ?? "Creator"),
+    title: parsed.title,
+    description: parsed.description,
+    thresholdCount: parsed.thresholdCount,
+    deadlineAt: new Date(Date.now() + parsed.deadlineMinutes * 60 * 1000),
+    isPrivate: !!parsed.isPrivate,
+    objectives,
+  });
 
-  try {
-    let accountId = profile.stripe_account_id;
-    if (!accountId) {
-      const account = await stripe.accounts.create({
-        type: "express",
-        country: "US",
-        email: user.email ?? undefined,
-        capabilities: {
-          card_payments: { requested: true },
-          transfers: { requested: true },
-        },
-        business_type: "individual",
-        business_profile: {
-          url: env.APP_URL,
-          product_description: "Group food order collection and split payments.",
-        },
-        individual: {
-          first_name: firstName,
-          last_name: lastName,
-          email: user.email ?? undefined,
-        },
-        metadata: { chipin_user_id: user.id },
-      });
-      accountId = account.id;
+  redirect(`/chips/${chip.public_code}`);
+}
+
+export async function joinChipAction(publicCode: string, formData: FormData) {
+  const chip = await getChipByCode(publicCode);
+  if (!chip) redirect("/");
+
+  if (chip.status === "expired" || chip.status === "canceled") {
+    redirect(`/chips/${publicCode}`);
+  }
+
+  const user = await getSessionUser();
+  if (user) {
+    await upsertProfileFromUser(user);
+    const profile = await getProfile(user.id);
+    if (profile?.is_disabled) {
+      redirect("/auth/sign-in?blocked=1");
     }
-
-    const account = await stripe.accounts.retrieve(accountId);
-    await updateOrganizerStripeState({
+    const displayName =
+      profile?.full_name?.trim() || user.user_metadata?.name || user.email?.split("@")[0] || "Member";
+    await joinChip({
+      chipId: chip.id,
       userId: user.id,
-      stripeAccountId: accountId,
-      stripeOnboardingComplete: !!account.details_submitted,
-      chargesEnabled: !!account.charges_enabled,
-      payoutsEnabled: !!account.payouts_enabled,
+      displayName,
     });
-
-    const accountLink = await stripe.accountLinks.create({
-      account: accountId,
-      refresh_url: refreshUrl.toString(),
-      return_url: returnUrl.toString(),
-      type: "account_onboarding",
-      collection_options: {
-        fields: "currently_due",
-      },
-    });
-
-    redirect(accountLink.url);
-  } catch (error) {
-    // Next.js redirect() throws internally; never convert that into an API error redirect.
-    if (
-      typeof error === "object" &&
-      error !== null &&
-      "digest" in error &&
-      String((error as { digest: unknown }).digest).startsWith("NEXT_REDIRECT")
-    ) {
-      throw error;
-    }
-
-    const message = error instanceof Error ? error.message.toLowerCase() : "";
-    if (message.includes("responsibilities of managing losses")) {
-      redirect("/onboarding/stripe?error=platform-profile");
-    }
-    if (message.includes("invalid api key")) {
-      redirect("/onboarding/stripe?error=stripe-invalid-key");
-    }
-    if (message.includes("test mode key") || message.includes("live mode key")) {
-      redirect("/onboarding/stripe?error=stripe-mode-mismatch");
-    }
-    if (message.includes("connect")) {
-      redirect("/onboarding/stripe?error=stripe-connect-config");
-    }
-
-    console.error("startStripeConnectAction failed", error);
-    redirect("/onboarding/stripe?error=stripe-api");
+    redirect(`/chips/${publicCode}?joined=1`);
   }
+
+  const guestName = cleanObjective(formData.get("guestName"));
+  if (!guestName) {
+    redirect(`/chips/${publicCode}?error=guest-name`);
+  }
+
+  await joinChip({
+    chipId: chip.id,
+    displayName: guestName,
+  });
+  redirect(`/chips/${publicCode}?joined=1`);
 }
 
-const contributorSchema = z.object({
-  contributorName: z.string().trim().min(1).max(80),
-  amount: z.coerce.number().positive().max(500),
-});
-
-export async function createCheckoutAction(publicCode: string, formData: FormData) {
-  if (!hasUsableStripeSecretKey()) {
-    redirect(`/join/${publicCode}?unavailable=1`);
-  }
-
-  const parsed = contributorSchema.parse({
-    contributorName: formData.get("contributorName"),
-    amount: formData.get("amount"),
-  });
-
-  const pool = await getPoolByCode(publicCode);
-  if (!pool) {
-    redirect("/");
-  }
-  if (pool.status !== "active") {
-    const statusRoute = pool.status === "funded" ? "funded" : "expired";
-    redirect(`/join/${publicCode}/${statusRoute}`);
-  }
-  if (new Date(pool.deadline_at).getTime() <= Date.now()) {
-    redirect(`/join/${publicCode}/expired`);
-  }
-  if (!pool.organizer_stripe_account_id || !pool.organizer_stripe_connected) {
-    redirect(`/join/${publicCode}?unavailable=1`);
-  }
-
-  const amountCents = Math.round(parsed.amount * 100);
-  const descriptorSuffix = pool.title
-    .replace(/[^a-zA-Z0-9 ]/g, "")
-    .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, 16)
-    .toUpperCase();
-
-  const contribution = await createPendingContribution({
-    poolId: pool.id,
-    contributorName: parsed.contributorName,
-    amountCents,
-  });
-
-  const session = await stripe.checkout.sessions.create({
-    mode: "payment",
-    success_url: `${env.APP_URL}/join/${pool.public_code}/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${env.APP_URL}/join/${pool.public_code}`,
-    line_items: [
-      {
-        quantity: 1,
-        price_data: {
-          currency: "usd",
-          unit_amount: amountCents,
-          product_data: {
-            name: `ChipIn: ${pool.title}`,
-            description: pool.restaurant_name || "Shared food pool contribution",
-          },
-        },
-      },
-    ],
-    payment_intent_data: {
-      application_fee_amount: contribution.platform_fee_cents,
-      transfer_data: { destination: pool.organizer_stripe_account_id },
-      statement_descriptor_suffix: descriptorSuffix || "CHIPIN",
-      metadata: {
-        pool_id: pool.id,
-        pool_public_code: pool.public_code,
-        contribution_id: contribution.id,
-      },
-    },
-    metadata: {
-      pool_id: pool.id,
-      pool_public_code: pool.public_code,
-      contribution_id: contribution.id,
-    },
-    submit_type: "pay",
-  });
-
-  await upsertContributionPayment({
-    contributionId: contribution.id,
-    stripeCheckoutSessionId: session.id,
-    stripeDestinationAccountId: pool.organizer_stripe_account_id,
-  });
-
-  await insertPoolEvent({
-    poolId: pool.id,
-    contributionId: contribution.id,
-    eventType: "checkout_session_created",
-    metadata: { session_id: session.id },
-  });
-
-  if (!session.url) {
-    throw new Error("Stripe session did not include a redirect URL.");
-  }
-
-  redirect(session.url);
-}
-
-export async function cancelPoolAction(poolId: string) {
+export async function toggleObjectiveAction(formData: FormData) {
   const { user } = await requireSessionUser();
-  await setPoolStatus({ poolId, fromStatus: "active", toStatus: "canceled" });
-  await insertPoolEvent({
-    poolId,
-    eventType: "pool_canceled",
-    metadata: { by: user.id },
+  const publicCode = String(formData.get("publicCode") ?? "");
+  const objectiveId = String(formData.get("objectiveId") ?? "");
+  const returnPath = safePath(
+    typeof formData.get("returnPath") === "string" ? String(formData.get("returnPath")) : null,
+  );
+
+  if (!publicCode || !objectiveId) redirect(returnPath);
+  const chip = await getChipByCode(publicCode);
+  if (!chip) redirect(returnPath);
+
+  const participant =
+    (await getParticipantByUser(chip.id, user.id)) ??
+    (await getParticipantByName(chip.id, user.user_metadata?.name || user.email?.split("@")[0] || ""));
+  if (!participant) {
+    redirect(`${returnPath}?error=join-first`);
+  }
+
+  await toggleObjectiveCompletion({
+    chipId: chip.id,
+    objectiveId,
+    participantId: participant.id,
   });
+  revalidatePath(returnPath);
+  redirect(returnPath);
+}
+
+export async function completeChipAction(formData: FormData) {
+  const { user } = await requireSessionUser();
+  const publicCode = String(formData.get("publicCode") ?? "");
+  if (!publicCode) redirect("/dashboard");
+
+  const chip = await getChipByCode(publicCode);
+  if (!chip || chip.creator_id !== user.id) redirect("/dashboard");
+
+  await setChipStatus({
+    chipId: chip.id,
+    toStatus: "completed",
+  });
+  revalidatePath(`/chips/${publicCode}`);
   revalidatePath("/dashboard");
+}
+
+export async function cancelChipAction(formData: FormData) {
+  const { user } = await requireSessionUser();
+  const publicCode = String(formData.get("publicCode") ?? "");
+  if (!publicCode) redirect("/dashboard");
+
+  const chip = await getChipByCode(publicCode);
+  if (!chip || chip.creator_id !== user.id) redirect("/dashboard");
+
+  await setChipStatus({
+    chipId: chip.id,
+    fromStatus: chip.status,
+    toStatus: "canceled",
+  });
+  revalidatePath(`/chips/${publicCode}`);
+  revalidatePath("/dashboard");
+  redirect("/dashboard");
 }
 
 export async function signOutAction() {

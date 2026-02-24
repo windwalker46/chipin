@@ -12,10 +12,9 @@ export async function requireSessionUser(redirectPath = "/auth/sign-in") {
   const user = await getSessionUser();
   if (!user) redirect(redirectPath);
 
-  // Lazy import avoids forcing DB/Stripe env parsing for routes that only need session checks.
-  const { upsertProfileFromUser, getOrganizerProfile } = await import("@/lib/pools");
+  const { upsertProfileFromUser, getProfile } = await import("@/lib/profiles");
   await upsertProfileFromUser(user);
-  const profile = await getOrganizerProfile(user.id);
+  const profile = await getProfile(user.id);
 
   if (!profile || profile.is_disabled) {
     redirect("/auth/sign-in?blocked=1");
