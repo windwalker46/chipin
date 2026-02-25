@@ -14,6 +14,11 @@ export default async function PricingPage() {
     <ScreenContainer>
       <SiteHeader isSignedIn={!!user} displayName={displayName} />
 
+      <section className="chip-card mb-4 p-6">
+        <h1 className="text-3xl font-black">Pricing</h1>
+        <p className="mt-2 text-sm text-[#475569]">Start free. Upgrade per chip when you need more control.</p>
+      </section>
+
       <section className="grid gap-4 md:grid-cols-2">
         <article className="chip-card space-y-3 p-6">
           <h2 className="text-2xl font-black">Free Chip</h2>
@@ -27,15 +32,17 @@ export default async function PricingPage() {
         </article>
 
         <article className="chip-card space-y-3 border-[#0e7490] p-6">
-          <h2 className="text-2xl font-black">Power Chip</h2>
+          <h2 className="text-2xl font-black">Power Upgrade</h2>
           <p className="text-sm text-[#475569]">$1.99 per chip unlock</p>
+          <span className="inline-block rounded-full border border-[#0e7490] bg-[#e2f3f6] px-2 py-1 text-xs font-semibold text-[#155e75]">
+            Coming Soon
+          </span>
           <ul className="space-y-2 text-sm">
             <li>Unlimited objectives</li>
             <li>Recurring chips</li>
             <li>Invite-only mode</li>
             <li>Assignments + reminders</li>
           </ul>
-          <p className="text-xs text-[#64748b]">Power features are planned and not yet enabled in this build.</p>
         </article>
       </section>
 
