@@ -1,7 +1,93 @@
 import { db } from "@/lib/db";
 import type { ChipObjectiveRow, ChipParticipantRow, ChipRow, ChipStatus } from "@/lib/types";
 
+async function reconcileChipLifecycle(chipId: string) {
+  await db.query(
+    `
+      with stats as (
+        select
+          $1::uuid as chip_id,
+          (select count(*)::int from public.chip_participants where chip_id = $1) as participant_count,
+          (select count(*)::int from public.chip_objectives where chip_id = $1) as objective_count
+      )
+      update public.chips c
+      set
+        participant_count = stats.participant_count,
+        objective_count = stats.objective_count,
+        status = case
+          when c.status in ('pending', 'active') and c.deadline_at <= now() then 'expired'::public.chip_status
+          when c.status = 'pending' and stats.participant_count >= c.threshold_count then 'active'::public.chip_status
+          else c.status
+        end,
+        activated_at = case
+          when c.status = 'pending'
+            and stats.participant_count >= c.threshold_count
+            and c.deadline_at > now()
+          then coalesce(c.activated_at, now())
+          else c.activated_at
+        end,
+        expired_at = case
+          when c.status in ('pending', 'active') and c.deadline_at <= now()
+          then coalesce(c.expired_at, now())
+          else c.expired_at
+        end,
+        updated_at = case
+          when c.participant_count <> stats.participant_count
+            or c.objective_count <> stats.objective_count
+            or (c.status in ('pending', 'active') and c.deadline_at <= now())
+            or (c.status = 'pending' and stats.participant_count >= c.threshold_count)
+          then now()
+          else c.updated_at
+        end
+      from stats
+      where c.id = stats.chip_id
+    `,
+    [chipId],
+  );
+
+  await db.query(
+    `
+      update public.chips c
+      set
+        status = 'completed',
+        completed_at = coalesce(c.completed_at, now()),
+        updated_at = now()
+      where c.id = $1
+        and c.status = 'active'
+        and exists (
+          select 1
+          from public.chip_objectives o
+          where o.chip_id = c.id
+        )
+        and not exists (
+          select 1
+          from public.chip_objectives o
+          where o.chip_id = c.id
+            and o.completed_at is null
+        )
+    `,
+    [chipId],
+  );
+}
+
+async function reconcileCreatorOpenChips(creatorId: string) {
+  const result = await db.query(
+    `
+      select id
+      from public.chips
+      where creator_id = $1
+        and status in ('pending', 'active')
+    `,
+    [creatorId],
+  );
+
+  const chipIds = result.rows.map((row) => row.id as string);
+  await Promise.all(chipIds.map((chipId) => reconcileChipLifecycle(chipId)));
+}
+
 export async function listCreatorChips(creatorId: string) {
+  await reconcileCreatorOpenChips(creatorId);
+
   const result = await db.query(
     `
       select
@@ -18,6 +104,8 @@ export async function listCreatorChips(creatorId: string) {
 }
 
 export async function getCreatorOpenChipCount(creatorId: string) {
+  await reconcileCreatorOpenChips(creatorId);
+
   const result = await db.query(
     `
       select count(*)::int as count
@@ -125,6 +213,20 @@ export async function createChip(input: {
 }
 
 export async function getChipByCode(publicCode: string) {
+  const idResult = await db.query(
+    `
+      select id
+      from public.chips
+      where public_code = $1
+      limit 1
+    `,
+    [publicCode],
+  );
+  const chipId = idResult.rows[0]?.id as string | undefined;
+  if (!chipId) return undefined;
+
+  await reconcileChipLifecycle(chipId);
+
   const result = await db.query(
     `
       select
@@ -260,6 +362,8 @@ export async function joinChip(input: {
     await client.query("select public.refresh_chip_stats($1)", [input.chipId]);
     await client.query("select public.activate_chip_if_threshold_met($1)", [input.chipId]);
     await client.query("commit");
+
+    await reconcileChipLifecycle(input.chipId);
     return existing;
   } catch (error) {
     await client.query("rollback");

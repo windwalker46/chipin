@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import {
   cancelChipAction,
@@ -43,7 +44,11 @@ export default async function ChipPage({
   const isCreator = user?.id === chip.creator_id;
   const percent = formatPercent(chip.participant_count, chip.threshold_count) ?? 0;
   const env = getServerEnv();
-  const shareUrl = `${env.APP_URL}/chips/${chip.public_code}`;
+  const requestHeaders = await headers();
+  const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
+  const proto = requestHeaders.get("x-forwarded-proto") ?? "https";
+  const origin = host ? `${proto}://${host}` : env.APP_URL;
+  const shareUrl = `${origin}/chips/${chip.public_code}`;
   const canJoin = chip.status === "pending" || chip.status === "active";
   const canToggle = chip.status === "active" && !!userParticipant;
 
@@ -79,6 +84,9 @@ export default async function ChipPage({
         {search.error === "join-first" ? (
           <p className="rounded-lg bg-[#fee2e2] p-3 text-sm text-[#991b1b]">Join this chip before updating objectives.</p>
         ) : null}
+        {search.error === "not-active" ? (
+          <p className="rounded-lg bg-[#fee2e2] p-3 text-sm text-[#991b1b]">Objectives unlock after the chip is active.</p>
+        ) : null}
         {canJoin ? (
           userParticipant ? (
             <p className="rounded-lg bg-[#ecfeff] p-3 text-sm text-[#155e75]">
@@ -101,6 +109,9 @@ export default async function ChipPage({
 
       <section className="chip-card mt-5 space-y-3 p-5">
         <h2 className="text-sm font-bold uppercase tracking-wider text-[#0e7490]">Objectives</h2>
+        {chip.status !== "active" ? (
+          <p className="text-sm text-[#64748b]">Objectives can be completed after the chip activates.</p>
+        ) : null}
         {objectives.length === 0 ? (
           <p className="text-sm text-[#64748b]">No objectives yet.</p>
         ) : (

@@ -121,6 +121,9 @@ export async function toggleObjectiveAction(formData: FormData) {
   if (!publicCode || !objectiveId) redirect(returnPath);
   const chip = await getChipByCode(publicCode);
   if (!chip) redirect(returnPath);
+  if (chip.status !== "active") {
+    redirect(`${returnPath}?error=not-active`);
+  }
 
   const participant =
     (await getParticipantByUser(chip.id, user.id)) ??

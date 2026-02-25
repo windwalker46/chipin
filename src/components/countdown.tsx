@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 function formatMs(ms: number) {
-  if (ms <= 0) return "00:00";
+  if (ms <= 0) return "Expired";
   const totalSeconds = Math.floor(ms / 1000);
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -26,5 +26,9 @@ export function Countdown({ deadlineAt }: { deadlineAt: string }) {
     return () => clearInterval(id);
   }, [deadline]);
 
-  return <span className="font-mono text-sm font-semibold">{formatMs(left)}</span>;
+  return (
+    <span className={`font-mono text-sm font-semibold ${left <= 0 ? "text-[#991b1b]" : ""}`}>
+      {formatMs(left)}
+    </span>
+  );
 }

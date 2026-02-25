@@ -6,7 +6,12 @@ export function ShareLink({ url }: { url: string }) {
   const [copied, setCopied] = useState(false);
 
   async function copyLink() {
-    await navigator.clipboard.writeText(url);
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      window.prompt("Copy this link:", url);
+      return;
+    }
     setCopied(true);
     setTimeout(() => setCopied(false), 1200);
   }
