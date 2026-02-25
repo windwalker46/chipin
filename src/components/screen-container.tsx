@@ -1,8 +1,18 @@
 import type { ReactNode } from "react";
 
-export function ScreenContainer({ children }: { children: ReactNode }) {
+type ScreenContainerProps = {
+  children: ReactNode;
+  size?: "wide" | "narrow";
+};
+
+export function ScreenContainer({ children, size = "wide" }: ScreenContainerProps) {
+  const widthClass =
+    size === "narrow"
+      ? "max-w-md sm:max-w-xl"
+      : "max-w-6xl";
+
   return (
-    <main className="mx-auto min-h-screen w-full max-w-md px-4 py-6 sm:max-w-xl sm:px-6">
+    <main className={`mx-auto min-h-screen w-full px-4 py-6 sm:px-6 ${widthClass}`}>
       {children}
     </main>
   );

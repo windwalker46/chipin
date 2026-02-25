@@ -15,7 +15,7 @@ export default async function SignInPage({
   const search = await searchParams;
 
   return (
-    <ScreenContainer>
+    <ScreenContainer size="narrow">
       <div className="mb-6">
         <Link href="/" className="text-sm font-semibold text-[#155e75]">
           Back
@@ -39,9 +39,14 @@ export default async function SignInPage({
             This account is currently blocked.
           </p>
         ) : null}
-        <GoogleSignInButton />
-        <div className="border-t border-[#e2e8f0] pt-4">
+        <div>
           <EmailPasswordAuthForm />
+        </div>
+        <div className="border-t border-[#e2e8f0] pt-4">
+          <p className="mb-3 text-center text-xs font-semibold uppercase tracking-wide text-[#64748b]">
+            Or continue with Google
+          </p>
+          <GoogleSignInButton />
         </div>
       </section>
     </ScreenContainer>
