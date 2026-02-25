@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ScreenContainer } from "@/components/screen-container";
+import { SiteHeader } from "@/components/site-header";
 import { getSessionUser } from "@/lib/auth";
 import { normalizeNextPath } from "@/lib/navigation";
 
@@ -24,23 +25,7 @@ export default async function Home({
 
   return (
     <ScreenContainer>
-      <header className="mb-12 flex items-center justify-between">
-        <span className="rounded-full border border-[#bfdbfe] bg-white px-3 py-1 text-sm font-bold tracking-wide">
-          CHIPIN
-        </span>
-        {user ? (
-          <Link href="/dashboard" className="flex items-center gap-2 rounded-lg border border-[#0e7490] px-3 py-2 text-sm font-semibold">
-            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#0e7490] text-xs font-bold text-white">
-              {displayName.charAt(0).toUpperCase()}
-            </span>
-            <span className="max-w-[8rem] truncate">{displayName}</span>
-          </Link>
-        ) : (
-          <Link href="/auth/sign-in" className="rounded-lg border border-[#0e7490] px-3 py-2 text-sm font-semibold">
-            Sign In
-          </Link>
-        )}
-      </header>
+      <SiteHeader isSignedIn={!!user} displayName={displayName} />
 
       <section className="chip-card space-y-5 p-6">
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#155e75]">Threshold + Collective Task Engine</p>
@@ -60,10 +45,19 @@ export default async function Home({
         </ol>
       </section>
 
+      <section className="mt-8 chip-card p-6">
+        <h2 className="text-sm font-bold uppercase tracking-widest text-[#0e7490]">Built For Real Groups</h2>
+        <div className="mt-4 grid gap-3 text-sm md:grid-cols-3">
+          <div className="rounded-lg border border-[#e2e8f0] p-3">Fitness challenges</div>
+          <div className="rounded-lg border border-[#e2e8f0] p-3">Study sessions</div>
+          <div className="rounded-lg border border-[#e2e8f0] p-3">Roommate tasks</div>
+        </div>
+      </section>
+
       <footer className="mt-10 flex justify-between text-sm text-[#475569]">
-        <Link href="/legal/terms">Terms</Link>
-        <Link href="/legal/privacy">Privacy</Link>
-        <a href="mailto:help@chipin.app">Contact</a>
+        <Link href="/about">About</Link>
+        <Link href="/pricing">Pricing</Link>
+        <Link href="/contact">Contact</Link>
       </footer>
     </ScreenContainer>
   );

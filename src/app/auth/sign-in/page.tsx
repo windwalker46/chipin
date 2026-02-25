@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { EmailSignInForm } from "@/components/email-sign-in-form";
+import { EmailPasswordAuthForm } from "@/components/email-password-auth-form";
 import { ScreenContainer } from "@/components/screen-container";
 import { GoogleSignInButton } from "@/components/google-sign-in-button";
 import { getSessionUser } from "@/lib/auth";
@@ -26,12 +26,12 @@ export default async function SignInPage({
         <p className="text-sm text-[#475569]">Use Google or email to create chips, invite participants, and run shared objectives.</p>
         {search.error === "oauth" ? (
           <p className="rounded-lg bg-[#fee2e2] p-3 text-sm text-[#991b1b]">
-            Sign in failed. Try again with Google or use email magic link.
+            Sign in failed. Try again with Google or email/password.
           </p>
         ) : null}
-        {search.error === "magic-link" ? (
+        {search.error === "email-verification" ? (
           <p className="rounded-lg bg-[#fee2e2] p-3 text-sm text-[#991b1b]">
-            Magic link verification failed or expired. Request a new link.
+            Email verification failed or expired. Request a new signup confirmation email.
           </p>
         ) : null}
         {search.blocked === "1" ? (
@@ -41,7 +41,7 @@ export default async function SignInPage({
         ) : null}
         <GoogleSignInButton />
         <div className="border-t border-[#e2e8f0] pt-4">
-          <EmailSignInForm />
+          <EmailPasswordAuthForm />
         </div>
       </section>
     </ScreenContainer>

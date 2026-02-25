@@ -27,7 +27,7 @@ export async function GET(request: Request) {
       if (!error) {
         return NextResponse.redirect(new URL(next, requestUrl.origin));
       }
-      return NextResponse.redirect(new URL("/auth/sign-in?error=magic-link", requestUrl.origin));
+      return NextResponse.redirect(new URL("/auth/sign-in?error=email-verification", requestUrl.origin));
     }
 
     if (code) {
