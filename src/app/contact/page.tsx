@@ -15,8 +15,11 @@ export default async function ContactPage() {
       <section className="chip-card space-y-4 p-6">
         <h1 className="text-3xl font-black">Contact</h1>
         <p className="text-[#334155]">For support, bug reports, or partnership requests, email:</p>
-        <a href="mailto:help@chipin.app" className="inline-block rounded-lg border border-[#0e7490] px-4 py-2 font-semibold text-[#155e75]">
-          help@chipin.app
+        <a
+          href="mailto:intakeflow.dev@gmail.com"
+          className="inline-block rounded-lg border border-[#0e7490] px-4 py-2 font-semibold text-[#155e75]"
+        >
+          intakeflow.dev@gmail.com
         </a>
       </section>
     </ScreenContainer>
