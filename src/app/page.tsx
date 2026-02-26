@@ -135,11 +135,12 @@ export default async function Home({
       </section>
 
       <section className="mt-8 chip-card p-6 md:p-8">
-        <h2 className="text-sm font-bold uppercase tracking-widest text-[#0e7490]">Why ChipIn Exists</h2>
-        <p className="mt-2 text-sm text-[#334155]">
-          ChipIn started as a shared-payments concept, then pivoted after hitting marketplace and compliance friction.
-          Threshold logic proved cleaner: faster onboarding, less operational risk, and stronger accountability behavior.
-        </p>
+        <h2 className="text-sm font-bold uppercase tracking-widest text-[#0e7490]">WHY CHIPIN EXISTS</h2>
+        <p className="mt-2 text-sm text-[#334155]">Group plans fail because commitment is vague.</p>
+        <p className="mt-2 text-sm text-[#334155]">Polls measure interest. Group chats create noise. Nobody wants to be the only one who shows up.</p>
+        <p className="mt-2 text-sm font-semibold text-[#155e75]">ChipIn solves that.</p>
+        <p className="mt-2 text-sm text-[#334155]">If enough people commit, it activates. If not, it does not happen.</p>
+        <p className="mt-2 text-sm font-semibold text-[#0f172a]">Clear threshold. Clear deadline. Clear outcome.</p>
       </section>
 
       <footer className="mt-10 border-t border-[#dbe7eb] pt-5 text-sm text-[#475569]">
