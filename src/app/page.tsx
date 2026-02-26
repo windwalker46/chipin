@@ -86,7 +86,6 @@ export default async function Home({
               </div>
             </div>
           </div>
-          <p className="mt-4 text-xs text-[#64748b]">This transition from pending to activated is the core mechanic.</p>
         </article>
       </section>
 
@@ -145,7 +144,7 @@ export default async function Home({
 
       <footer className="mt-10 border-t border-[#dbe7eb] pt-5 text-sm text-[#475569]">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="font-medium">© 2026 / ChipIn</p>
+          <p className="font-medium">&copy; 2026 / ChipIn</p>
           <div className="flex flex-wrap items-center gap-4">
             <Link href="/about">About</Link>
             <Link href="/pricing">Pricing</Link>

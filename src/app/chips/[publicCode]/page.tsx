@@ -14,6 +14,7 @@ import { ShareLink } from "@/components/share-link";
 import { StatusBadge } from "@/components/status-badge";
 import {
   getChipByCode,
+  getParticipantByName,
   getParticipantByUser,
   listChipObjectives,
   listChipParticipants,
@@ -40,7 +41,10 @@ export default async function ChipPage({
     getSessionUser(),
   ]);
 
-  const userParticipant = user ? await getParticipantByUser(chip.id, user.id) : undefined;
+  const userParticipant = user
+    ? ((await getParticipantByUser(chip.id, user.id)) ??
+      (await getParticipantByName(chip.id, user.user_metadata?.name || user.email?.split("@")[0] || "")))
+    : undefined;
   const isCreator = user?.id === chip.creator_id;
   const percent = formatPercent(chip.participant_count, chip.threshold_count) ?? 0;
   const env = getServerEnv();
@@ -50,7 +54,7 @@ export default async function ChipPage({
   const origin = host ? `${proto}://${host}` : env.APP_URL;
   const shareUrl = `${origin}/chips/${chip.public_code}`;
   const canJoin = chip.status === "pending" || chip.status === "active";
-  const canToggle = chip.status === "active" && !!userParticipant;
+  const canToggle = (chip.status === "pending" || chip.status === "active") && (!!userParticipant || isCreator);
 
   return (
     <ScreenContainer>
@@ -85,7 +89,7 @@ export default async function ChipPage({
           <p className="rounded-lg bg-[#fee2e2] p-3 text-sm text-[#991b1b]">Join this chip before updating objectives.</p>
         ) : null}
         {search.error === "not-active" ? (
-          <p className="rounded-lg bg-[#fee2e2] p-3 text-sm text-[#991b1b]">Objectives unlock after the chip is active.</p>
+          <p className="rounded-lg bg-[#fee2e2] p-3 text-sm text-[#991b1b]">Objectives cannot be edited on completed, expired, or canceled chips.</p>
         ) : null}
         {canJoin ? (
           userParticipant ? (
@@ -109,8 +113,8 @@ export default async function ChipPage({
 
       <section className="chip-card mt-5 space-y-3 p-5">
         <h2 className="text-sm font-bold uppercase tracking-wider text-[#0e7490]">Objectives</h2>
-        {chip.status !== "active" ? (
-          <p className="text-sm text-[#64748b]">Objectives can be completed after the chip activates.</p>
+        {chip.status === "completed" || chip.status === "expired" || chip.status === "canceled" ? (
+          <p className="text-sm text-[#64748b]">This chip is read-only.</p>
         ) : null}
         {objectives.length === 0 ? (
           <p className="text-sm text-[#64748b]">No objectives yet.</p>

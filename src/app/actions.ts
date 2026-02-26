@@ -121,13 +121,25 @@ export async function toggleObjectiveAction(formData: FormData) {
   if (!publicCode || !objectiveId) redirect(returnPath);
   const chip = await getChipByCode(publicCode);
   if (!chip) redirect(returnPath);
-  if (chip.status !== "active") {
+  if (chip.status === "expired" || chip.status === "canceled" || chip.status === "completed") {
     redirect(`${returnPath}?error=not-active`);
   }
 
-  const participant =
+  let participant =
     (await getParticipantByUser(chip.id, user.id)) ??
     (await getParticipantByName(chip.id, user.user_metadata?.name || user.email?.split("@")[0] || ""));
+
+  if (!participant && chip.creator_id === user.id) {
+    const profile = await getProfile(user.id);
+    const displayName =
+      profile?.full_name?.trim() || user.user_metadata?.name || user.email?.split("@")[0] || "Creator";
+    participant = await joinChip({
+      chipId: chip.id,
+      userId: user.id,
+      displayName,
+    });
+  }
+
   if (!participant) {
     redirect(`${returnPath}?error=join-first`);
   }
