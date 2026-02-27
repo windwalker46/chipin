@@ -28,7 +28,7 @@ export default async function ChipPage({
   searchParams,
 }: {
   params: Promise<{ publicCode: string }>;
-  searchParams: Promise<{ joined?: string; error?: string }>;
+  searchParams: Promise<{ joined?: string; guest?: string; error?: string }>;
 }) {
   const { publicCode } = await params;
   const search = await searchParams;
@@ -53,6 +53,7 @@ export default async function ChipPage({
   const proto = requestHeaders.get("x-forwarded-proto") ?? "https";
   const origin = host ? `${proto}://${host}` : env.APP_URL;
   const shareUrl = `${origin}/chips/${chip.public_code}`;
+  const signInHref = `/auth/sign-in?next=${encodeURIComponent(`/chips/${chip.public_code}`)}&from=guest`;
   const canJoin = chip.status === "pending" || chip.status === "active";
   const canToggle = (chip.status === "pending" || chip.status === "active") && (!!userParticipant || isCreator);
 
@@ -82,6 +83,20 @@ export default async function ChipPage({
       <section className="chip-card mt-5 space-y-3 p-5">
         <h2 className="text-sm font-bold uppercase tracking-wider text-[#0e7490]">Commitment</h2>
         {search.joined ? <p className="rounded-lg bg-[#dcfce7] p-3 text-sm text-[#14532d]">You are in.</p> : null}
+        {!user && search.guest === "1" ? (
+          <div className="rounded-lg border border-[#bae6fd] bg-[#f0f9ff] p-3 text-sm">
+            <p className="font-semibold text-[#0c4a6e]">Guest join complete.</p>
+            <p className="mt-1 text-[#334155]">Create an account to save this chip to your dashboard and complete objectives later.</p>
+            <Link href={signInHref} className="mt-2 inline-block font-semibold text-[#155e75] underline">
+              Create account or sign in
+            </Link>
+          </div>
+        ) : null}
+        {!user ? (
+          <p className="rounded-lg bg-[#f8fafc] p-3 text-sm text-[#334155]">
+            Guest mode is temporary. Use an account if you want this chip saved and objective completion access.
+          </p>
+        ) : null}
         {search.error === "guest-name" ? (
           <p className="rounded-lg bg-[#fee2e2] p-3 text-sm text-[#991b1b]">Enter your name before joining.</p>
         ) : null}
@@ -113,6 +128,11 @@ export default async function ChipPage({
 
       <section className="chip-card mt-5 space-y-3 p-5">
         <h2 className="text-sm font-bold uppercase tracking-wider text-[#0e7490]">Objectives</h2>
+        {!user ? (
+          <p className="text-sm text-[#64748b]">
+            Sign in with an account to complete objectives and keep this chip in your dashboard.
+          </p>
+        ) : null}
         {chip.status === "completed" || chip.status === "expired" || chip.status === "canceled" ? (
           <p className="text-sm text-[#64748b]">This chip is read-only.</p>
         ) : null}

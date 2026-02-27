@@ -8,7 +8,7 @@ import { getSessionUser } from "@/lib/auth";
 export default async function SignInPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; blocked?: string }>;
+  searchParams: Promise<{ error?: string; blocked?: string; from?: string }>;
 }) {
   const user = await getSessionUser();
   if (user) redirect("/dashboard");
@@ -37,6 +37,11 @@ export default async function SignInPage({
         {search.blocked === "1" ? (
           <p className="rounded-lg bg-[#fee2e2] p-3 text-sm text-[#991b1b]">
             This account is currently blocked.
+          </p>
+        ) : null}
+        {search.from === "guest" ? (
+          <p className="rounded-lg bg-[#ecfeff] p-3 text-sm text-[#155e75]">
+            Sign in or create an account to save joined chips and complete objectives.
           </p>
         ) : null}
         <div>

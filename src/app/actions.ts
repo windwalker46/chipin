@@ -107,7 +107,7 @@ export async function joinChipAction(publicCode: string, formData: FormData) {
     chipId: chip.id,
     displayName: guestName,
   });
-  redirect(`/chips/${publicCode}?joined=1`);
+  redirect(`/chips/${publicCode}?joined=1&guest=1`);
 }
 
 export async function toggleObjectiveAction(formData: FormData) {
