@@ -21,11 +21,16 @@ export default async function DashboardPage() {
           <p className="text-xs uppercase tracking-[0.16em] text-[#155e75]">Creator Dashboard</p>
           <h1 className="text-2xl font-black">Your Chips</h1>
         </div>
-        <form action={signOutAction}>
-          <button type="submit" className="rounded-lg border border-[#cbd5e1] px-3 py-2 text-sm font-semibold">
-            Sign Out
-          </button>
-        </form>
+        <div className="flex gap-2">
+          <Link href="/profile" className="rounded-lg border border-[#cbd5e1] px-3 py-2 text-sm font-semibold">
+            Profile
+          </Link>
+          <form action={signOutAction}>
+            <button type="submit" className="rounded-lg border border-[#cbd5e1] px-3 py-2 text-sm font-semibold">
+              Sign Out
+            </button>
+          </form>
+        </div>
       </header>
 
       <section className="chip-card mb-6 space-y-3 p-4 text-sm">

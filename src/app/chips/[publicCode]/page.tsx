@@ -5,6 +5,7 @@ import {
   cancelChipAction,
   completeChipAction,
   joinChipAction,
+  removeParticipantAction,
   toggleObjectiveAction,
 } from "@/app/actions";
 import { Countdown } from "@/components/countdown";
@@ -54,8 +55,13 @@ export default async function ChipPage({
   const origin = host ? `${proto}://${host}` : env.APP_URL;
   const shareUrl = `${origin}/chips/${chip.public_code}`;
   const signInHref = `/auth/sign-in?next=${encodeURIComponent(`/chips/${chip.public_code}`)}&from=guest`;
-  const canJoin = chip.status === "pending" || chip.status === "active";
+  const isOpen = chip.status === "pending" || chip.status === "active";
+  const isFull = chip.participant_count >= chip.threshold_count;
+  const canJoin = isOpen && (!isFull || !!userParticipant);
   const canToggle = (chip.status === "pending" || chip.status === "active") && (!!userParticipant || isCreator);
+  const inviteMailto = `mailto:?subject=${encodeURIComponent(`Join my ChipIn: ${chip.title}`)}&body=${encodeURIComponent(
+    `Join this chip: ${shareUrl}`,
+  )}`;
 
   return (
     <ScreenContainer>
@@ -106,6 +112,9 @@ export default async function ChipPage({
         {search.error === "not-active" ? (
           <p className="rounded-lg bg-[#fee2e2] p-3 text-sm text-[#991b1b]">Objectives cannot be edited on completed, expired, or canceled chips.</p>
         ) : null}
+        {search.error === "full" ? (
+          <p className="rounded-lg bg-[#fee2e2] p-3 text-sm text-[#991b1b]">This chip is at max capacity.</p>
+        ) : null}
         {canJoin ? (
           userParticipant ? (
             <p className="rounded-lg bg-[#ecfeff] p-3 text-sm text-[#155e75]">
@@ -122,7 +131,9 @@ export default async function ChipPage({
             </form>
           )
         ) : (
-          <p className="rounded-lg bg-[#e2e8f0] p-3 text-sm text-[#334155]">This chip is no longer accepting new participants.</p>
+          <p className="rounded-lg bg-[#e2e8f0] p-3 text-sm text-[#334155]">
+            {isFull && isOpen ? "This chip is at max capacity." : "This chip is no longer accepting new participants."}
+          </p>
         )}
       </section>
 
@@ -186,8 +197,25 @@ export default async function ChipPage({
         <ul className="space-y-2 text-sm">
           {participants.map((entry) => (
             <li key={entry.id} className="flex items-center justify-between">
-              <span>{entry.display_name}</span>
-              <span className="text-[#64748b]">{entry.is_creator ? "Creator" : "Participant"}</span>
+              <div className="flex items-center gap-2">
+                {entry.user_id ? (
+                  <Link href={entry.user_id === user?.id ? "/profile" : `/profile/${entry.user_id}`} className="font-medium hover:underline">
+                    {entry.display_name}
+                  </Link>
+                ) : (
+                  <span className="font-medium">{entry.display_name}</span>
+                )}
+                <span className="text-[#64748b]">{entry.is_creator ? "Creator" : "Participant"}</span>
+              </div>
+              {isCreator && !entry.is_creator ? (
+                <form action={removeParticipantAction}>
+                  <input type="hidden" name="publicCode" value={chip.public_code} />
+                  <input type="hidden" name="participantId" value={entry.id} />
+                  <button type="submit" className="rounded-lg border border-[#ef4444] px-2 py-1 text-xs font-semibold text-[#991b1b]">
+                    Remove
+                  </button>
+                </form>
+              ) : null}
             </li>
           ))}
         </ul>
@@ -202,6 +230,11 @@ export default async function ChipPage({
       {isCreator ? (
         <section className="chip-card mt-5 space-y-3 p-5">
           <h2 className="text-sm font-bold uppercase tracking-wider text-[#0e7490]">Creator Controls</h2>
+          <div className="flex gap-2">
+            <a href={inviteMailto} className="chip-button chip-button-secondary">
+              Invite via Email
+            </a>
+          </div>
           <div className="flex gap-2">
             <form action={completeChipAction} className="w-full">
               <input type="hidden" name="publicCode" value={chip.public_code} />

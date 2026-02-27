@@ -322,6 +322,25 @@ export async function joinChip(input: {
   try {
     await client.query("begin");
 
+    const chipRes = await client.query(
+      `
+        select status, threshold_count
+        from public.chips
+        where id = $1
+        limit 1
+        for update
+      `,
+      [input.chipId],
+    );
+    if (chipRes.rowCount === 0) {
+      throw new Error("Chip not found.");
+    }
+    const chipStatus = chipRes.rows[0]?.status as ChipStatus;
+    const thresholdCount = chipRes.rows[0]?.threshold_count as number;
+    if (chipStatus === "completed" || chipStatus === "expired" || chipStatus === "canceled") {
+      throw new Error("Chip is not accepting participants.");
+    }
+
     let existing: ChipParticipantRow | undefined;
     if (input.userId) {
       const byUser = await client.query(
@@ -348,6 +367,19 @@ export async function joinChip(input: {
     }
 
     if (!existing) {
+      const countRes = await client.query(
+        `
+          select count(*)::int as count
+          from public.chip_participants
+          where chip_id = $1
+        `,
+        [input.chipId],
+      );
+      const participantCount = (countRes.rows[0]?.count as number | undefined) ?? 0;
+      if (participantCount >= thresholdCount) {
+        throw new Error("Chip capacity reached.");
+      }
+
       const insertRes = await client.query(
         `
           insert into public.chip_participants (chip_id, user_id, display_name, is_creator)
@@ -365,6 +397,70 @@ export async function joinChip(input: {
 
     await reconcileChipLifecycle(input.chipId);
     return existing;
+  } catch (error) {
+    await client.query("rollback");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export async function removeChipParticipant(input: {
+  chipId: string;
+  participantId: string;
+  requesterId: string;
+}) {
+  const client = await db.connect();
+  try {
+    await client.query("begin");
+
+    const chipRes = await client.query(
+      `
+        select creator_id
+        from public.chips
+        where id = $1
+        limit 1
+        for update
+      `,
+      [input.chipId],
+    );
+    if (chipRes.rowCount === 0) {
+      throw new Error("Chip not found.");
+    }
+    if ((chipRes.rows[0]?.creator_id as string) !== input.requesterId) {
+      throw new Error("Only the creator can remove participants.");
+    }
+
+    const participantRes = await client.query(
+      `
+        select is_creator
+        from public.chip_participants
+        where id = $1 and chip_id = $2
+        limit 1
+      `,
+      [input.participantId, input.chipId],
+    );
+    if (participantRes.rowCount === 0) {
+      await client.query("rollback");
+      return false;
+    }
+    if (participantRes.rows[0]?.is_creator) {
+      throw new Error("Cannot remove chip creator.");
+    }
+
+    await client.query(
+      `
+        delete from public.chip_participants
+        where id = $1 and chip_id = $2
+      `,
+      [input.participantId, input.chipId],
+    );
+
+    await client.query("select public.refresh_chip_stats($1)", [input.chipId]);
+    await client.query("select public.refresh_chip_completion_status($1)", [input.chipId]);
+    await client.query("commit");
+    await reconcileChipLifecycle(input.chipId);
+    return true;
   } catch (error) {
     await client.query("rollback");
     throw error;

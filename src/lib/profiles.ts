@@ -21,7 +21,7 @@ export async function upsertProfileFromUser(user: User) {
 export async function getProfile(userId: string) {
   const result = await db.query(
     `
-      select id, full_name, is_disabled
+      select id, full_name, avatar_url, is_disabled, created_at
       from public.profiles
       where id = $1
       limit 1
@@ -33,7 +33,41 @@ export async function getProfile(userId: string) {
     | {
         id: string;
         full_name: string | null;
+        avatar_url: string | null;
         is_disabled: boolean;
+        created_at: string;
       }
     | undefined;
+}
+
+export async function getProfileById(userId: string) {
+  const result = await db.query(
+    `
+      select id, full_name, avatar_url, created_at
+      from public.profiles
+      where id = $1
+      limit 1
+    `,
+    [userId],
+  );
+
+  return result.rows[0] as
+    | {
+        id: string;
+        full_name: string | null;
+        avatar_url: string | null;
+        created_at: string;
+      }
+    | undefined;
+}
+
+export async function updateProfileName(userId: string, fullName: string) {
+  await db.query(
+    `
+      update public.profiles
+      set full_name = $2, updated_at = now()
+      where id = $1
+    `,
+    [userId, fullName.trim()],
+  );
 }

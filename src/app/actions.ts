@@ -11,9 +11,15 @@ import {
   getParticipantByName,
   getParticipantByUser,
   joinChip,
+  removeChipParticipant,
   setChipStatus,
   toggleObjectiveCompletion,
 } from "@/lib/chips";
+import {
+  findProfileByEmail,
+  respondToFriendRequest,
+  sendFriendRequest,
+} from "@/lib/friends";
 import { getProfile, upsertProfileFromUser } from "@/lib/profiles";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -90,12 +96,20 @@ export async function joinChipAction(publicCode: string, formData: FormData) {
     }
     const displayName =
       profile?.full_name?.trim() || user.user_metadata?.name || user.email?.split("@")[0] || "Member";
-    await joinChip({
-      chipId: chip.id,
-      userId: user.id,
-      displayName,
-    });
-    redirect(`/chips/${publicCode}?joined=1`);
+    try {
+      await joinChip({
+        chipId: chip.id,
+        userId: user.id,
+        displayName,
+      });
+      redirect(`/chips/${publicCode}?joined=1`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "";
+      if (message.toLowerCase().includes("capacity")) {
+        redirect(`/chips/${publicCode}?error=full`);
+      }
+      throw error;
+    }
   }
 
   const guestName = cleanObjective(formData.get("guestName"));
@@ -103,11 +117,19 @@ export async function joinChipAction(publicCode: string, formData: FormData) {
     redirect(`/chips/${publicCode}?error=guest-name`);
   }
 
-  await joinChip({
-    chipId: chip.id,
-    displayName: guestName,
-  });
-  redirect(`/chips/${publicCode}?joined=1&guest=1`);
+  try {
+    await joinChip({
+      chipId: chip.id,
+      displayName: guestName,
+    });
+    redirect(`/chips/${publicCode}?joined=1&guest=1`);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    if (message.toLowerCase().includes("capacity")) {
+      redirect(`/chips/${publicCode}?error=full`);
+    }
+    throw error;
+  }
 }
 
 export async function toggleObjectiveAction(formData: FormData) {
@@ -187,8 +209,100 @@ export async function cancelChipAction(formData: FormData) {
   redirect("/dashboard");
 }
 
+export async function removeParticipantAction(formData: FormData) {
+  const { user } = await requireSessionUser();
+  const publicCode = String(formData.get("publicCode") ?? "");
+  const participantId = String(formData.get("participantId") ?? "");
+  if (!publicCode || !participantId) redirect("/dashboard");
+
+  const chip = await getChipByCode(publicCode);
+  if (!chip || chip.creator_id !== user.id) redirect("/dashboard");
+
+  await removeChipParticipant({
+    chipId: chip.id,
+    participantId,
+    requesterId: user.id,
+  });
+
+  revalidatePath(`/chips/${publicCode}`);
+  revalidatePath("/dashboard");
+  redirect(`/chips/${publicCode}`);
+}
+
 export async function signOutAction() {
   const supabase = await createSupabaseServerClient();
   await supabase.auth.signOut();
   redirect("/");
+}
+
+export async function updateProfileNameAction(formData: FormData) {
+  const { user } = await requireSessionUser();
+  const fullName = cleanObjective(formData.get("fullName"));
+  if (!fullName) redirect("/profile?error=name");
+
+  const { updateProfileName } = await import("@/lib/profiles");
+  await updateProfileName(user.id, fullName);
+  revalidatePath("/profile");
+  redirect("/profile?saved=1");
+}
+
+export async function sendFriendRequestAction(formData: FormData) {
+  const { user } = await requireSessionUser();
+  const targetUserIdRaw = cleanObjective(formData.get("targetUserId"));
+  const targetEmailRaw = cleanObjective(formData.get("email"));
+
+  let receiverId = targetUserIdRaw;
+  if (!receiverId && targetEmailRaw) {
+    const target = await findProfileByEmail(targetEmailRaw);
+    if (!target) {
+      redirect("/profile?error=friend-not-found");
+    }
+    receiverId = target.id;
+  }
+
+  if (!receiverId) {
+    redirect("/profile?error=friend-input");
+  }
+
+  try {
+    await sendFriendRequest({
+      senderId: user.id,
+      receiverId,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    if (message.toLowerCase().includes("already")) {
+      redirect("/profile?error=friend-exists");
+    }
+    if (message.toLowerCase().includes("yourself")) {
+      redirect("/profile?error=friend-self");
+    }
+    throw error;
+  }
+
+  revalidatePath("/profile");
+  revalidatePath(`/profile/${receiverId}`);
+  redirect("/profile?sent=1");
+}
+
+export async function respondFriendRequestAction(formData: FormData) {
+  const { user } = await requireSessionUser();
+  const requestId = cleanObjective(formData.get("requestId"));
+  const responseRaw = cleanObjective(formData.get("response"));
+  if (!requestId || !responseRaw) redirect("/profile");
+
+  const response =
+    responseRaw === "accepted" || responseRaw === "declined" || responseRaw === "canceled"
+      ? responseRaw
+      : null;
+  if (!response) redirect("/profile");
+
+  await respondToFriendRequest({
+    requestId,
+    userId: user.id,
+    response,
+  });
+
+  revalidatePath("/profile");
+  redirect("/profile");
 }
