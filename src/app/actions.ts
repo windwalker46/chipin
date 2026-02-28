@@ -143,7 +143,7 @@ export async function toggleObjectiveAction(formData: FormData) {
   if (!publicCode || !objectiveId) redirect(returnPath);
   const chip = await getChipByCode(publicCode);
   if (!chip) redirect(returnPath);
-  if (chip.status === "expired" || chip.status === "canceled" || chip.status === "completed") {
+  if (chip.status === "expired" || chip.status === "canceled") {
     redirect(`${returnPath}?error=not-active`);
   }
 

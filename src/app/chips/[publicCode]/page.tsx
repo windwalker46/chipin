@@ -58,7 +58,9 @@ export default async function ChipPage({
   const isOpen = chip.status === "pending" || chip.status === "active";
   const isFull = chip.participant_count >= chip.threshold_count;
   const canJoin = isOpen && (!isFull || !!userParticipant);
-  const canToggle = (chip.status === "pending" || chip.status === "active") && (!!userParticipant || isCreator);
+  const canToggle =
+    (chip.status === "pending" || chip.status === "active" || chip.status === "completed") &&
+    (!!userParticipant || isCreator);
   const inviteMailto = `mailto:?subject=${encodeURIComponent(`Join my ChipIn: ${chip.title}`)}&body=${encodeURIComponent(
     `Join this chip: ${shareUrl}`,
   )}`;
@@ -110,7 +112,7 @@ export default async function ChipPage({
           <p className="rounded-lg bg-[#fee2e2] p-3 text-sm text-[#991b1b]">Join this chip before updating objectives.</p>
         ) : null}
         {search.error === "not-active" ? (
-          <p className="rounded-lg bg-[#fee2e2] p-3 text-sm text-[#991b1b]">Objectives cannot be edited on completed, expired, or canceled chips.</p>
+          <p className="rounded-lg bg-[#fee2e2] p-3 text-sm text-[#991b1b]">Objectives cannot be edited on expired or canceled chips.</p>
         ) : null}
         {search.error === "full" ? (
           <p className="rounded-lg bg-[#fee2e2] p-3 text-sm text-[#991b1b]">This chip is at max capacity.</p>
@@ -144,8 +146,11 @@ export default async function ChipPage({
             Sign in with an account to complete objectives and keep this chip in your dashboard.
           </p>
         ) : null}
-        {chip.status === "completed" || chip.status === "expired" || chip.status === "canceled" ? (
+        {chip.status === "expired" || chip.status === "canceled" ? (
           <p className="text-sm text-[#64748b]">This chip is read-only.</p>
+        ) : null}
+        {chip.status === "completed" ? (
+          <p className="text-sm text-[#64748b]">Completed objectives can still be undone if you need to reopen the chip.</p>
         ) : null}
         {objectives.length === 0 ? (
           <p className="text-sm text-[#64748b]">No objectives yet.</p>

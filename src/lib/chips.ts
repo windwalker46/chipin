@@ -8,7 +8,8 @@ async function reconcileChipLifecycle(chipId: string) {
         select
           $1::uuid as chip_id,
           (select count(*)::int from public.chip_participants where chip_id = $1) as participant_count,
-          (select count(*)::int from public.chip_objectives where chip_id = $1) as objective_count
+          (select count(*)::int from public.chip_objectives where chip_id = $1) as objective_count,
+          (select count(*)::int from public.chip_objectives where chip_id = $1 and completed_at is not null) as completed_objective_count
       )
       update public.chips c
       set
@@ -16,6 +17,12 @@ async function reconcileChipLifecycle(chipId: string) {
         objective_count = stats.objective_count,
         status = case
           when c.status in ('pending', 'active') and c.deadline_at <= now() then 'expired'::public.chip_status
+          when c.status = 'completed' and c.deadline_at <= now() and stats.completed_objective_count < stats.objective_count then 'expired'::public.chip_status
+          when c.status = 'completed' and stats.objective_count > 0 and stats.completed_objective_count < stats.objective_count
+            then case
+              when stats.participant_count >= c.threshold_count then 'active'::public.chip_status
+              else 'pending'::public.chip_status
+            end
           when c.status = 'pending' and stats.participant_count >= c.threshold_count then 'active'::public.chip_status
           else c.status
         end,
@@ -27,14 +34,21 @@ async function reconcileChipLifecycle(chipId: string) {
           else c.activated_at
         end,
         expired_at = case
-          when c.status in ('pending', 'active') and c.deadline_at <= now()
+          when (c.status in ('pending', 'active') and c.deadline_at <= now())
+            or (c.status = 'completed' and c.deadline_at <= now() and stats.completed_objective_count < stats.objective_count)
           then coalesce(c.expired_at, now())
           else c.expired_at
+        end,
+        completed_at = case
+          when c.status = 'completed' and stats.objective_count > 0 and stats.completed_objective_count < stats.objective_count
+          then null
+          else c.completed_at
         end,
         updated_at = case
           when c.participant_count <> stats.participant_count
             or c.objective_count <> stats.objective_count
             or (c.status in ('pending', 'active') and c.deadline_at <= now())
+            or (c.status = 'completed' and stats.objective_count > 0 and stats.completed_objective_count < stats.objective_count)
             or (c.status = 'pending' and stats.participant_count >= c.threshold_count)
           then now()
           else c.updated_at
@@ -479,7 +493,7 @@ export async function toggleObjectiveCompletion(input: {
     await client.query("begin");
     const existingRes = await client.query(
       `
-        select completed_by_participant_id
+      select completed_by_participant_id
         from public.chip_objectives
         where id = $1 and chip_id = $2
         limit 1
@@ -514,6 +528,7 @@ export async function toggleObjectiveCompletion(input: {
 
     await client.query("select public.refresh_chip_completion_status($1)", [input.chipId]);
     await client.query("commit");
+    await reconcileChipLifecycle(input.chipId);
   } catch (error) {
     await client.query("rollback");
     throw error;
