@@ -9,6 +9,7 @@ import {
   toggleObjectiveAction,
 } from "@/app/actions";
 import { Countdown } from "@/components/countdown";
+import { FormSubmitButton } from "@/components/form-submit-button";
 import { ProgressBar } from "@/components/progress-bar";
 import { ScreenContainer } from "@/components/screen-container";
 import { ShareLink } from "@/components/share-link";
@@ -127,9 +128,7 @@ export default async function ChipPage({
               {user ? null : (
                 <input className="chip-input" name="guestName" maxLength={80} required placeholder="Your name" />
               )}
-              <button className="chip-button" type="submit">
-                I&apos;m In
-              </button>
+              <FormSubmitButton idleLabel="I'm In" pendingLabel="Joining..." className="chip-button" />
             </form>
           )
         ) : (
@@ -179,14 +178,13 @@ export default async function ChipPage({
                         <input type="hidden" name="publicCode" value={chip.public_code} />
                         <input type="hidden" name="objectiveId" value={objective.id} />
                         <input type="hidden" name="returnPath" value={`/chips/${chip.public_code}`} />
-                        <button
-                          type="submit"
+                        <FormSubmitButton
+                          idleLabel={completed ? "Undo" : "Complete"}
+                          pendingLabel={completed ? "Undoing..." : "Completing..."}
                           className={`rounded-lg px-3 py-2 text-xs font-semibold ${
                             completed ? "bg-[#e2e8f0] text-[#1f2937]" : "bg-[#0e7490] text-white"
                           }`}
-                        >
-                          {completed ? "Undo" : "Complete"}
-                        </button>
+                        />
                       </form>
                     ) : null}
                   </div>
@@ -216,9 +214,11 @@ export default async function ChipPage({
                 <form action={removeParticipantAction}>
                   <input type="hidden" name="publicCode" value={chip.public_code} />
                   <input type="hidden" name="participantId" value={entry.id} />
-                  <button type="submit" className="rounded-lg border border-[#ef4444] px-2 py-1 text-xs font-semibold text-[#991b1b]">
-                    Remove
-                  </button>
+                  <FormSubmitButton
+                    idleLabel="Remove"
+                    pendingLabel="Removing..."
+                    className="rounded-lg border border-[#ef4444] px-2 py-1 text-xs font-semibold text-[#991b1b]"
+                  />
                 </form>
               ) : null}
             </li>
@@ -243,15 +243,19 @@ export default async function ChipPage({
           <div className="flex gap-2">
             <form action={completeChipAction} className="w-full">
               <input type="hidden" name="publicCode" value={chip.public_code} />
-              <button type="submit" className="chip-button chip-button-secondary">
-                Mark Completed
-              </button>
+              <FormSubmitButton
+                idleLabel="Mark Completed"
+                pendingLabel="Saving..."
+                className="chip-button chip-button-secondary"
+              />
             </form>
             <form action={cancelChipAction} className="w-full">
               <input type="hidden" name="publicCode" value={chip.public_code} />
-              <button type="submit" className="chip-button bg-[#b91c1c] hover:bg-[#991b1b]">
-                Cancel
-              </button>
+              <FormSubmitButton
+                idleLabel="Cancel"
+                pendingLabel="Canceling..."
+                className="chip-button bg-[#b91c1c] hover:bg-[#991b1b]"
+              />
             </form>
           </div>
         </section>

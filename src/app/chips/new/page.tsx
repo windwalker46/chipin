@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createChipAction } from "@/app/actions";
+import { FormSubmitButton } from "@/components/form-submit-button";
 import { ScreenContainer } from "@/components/screen-container";
 import { getCreatorOpenChipCount } from "@/lib/chips";
 import { requireSessionUser } from "@/lib/auth";
@@ -74,9 +75,12 @@ export default async function CreateChipPage({
             Private / invite-only (Power Chip preview)
           </label>
 
-          <button type="submit" className="chip-button" disabled={freeLimitHit}>
-            Create Chip
-          </button>
+          <FormSubmitButton
+            idleLabel="Create Chip"
+            pendingLabel="Creating..."
+            className="chip-button"
+            disabled={freeLimitHit}
+          />
         </form>
       </section>
     </ScreenContainer>

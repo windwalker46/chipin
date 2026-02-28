@@ -1,6 +1,4 @@
 "use server";
-
-import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getSessionUser, requireSessionUser } from "@/lib/auth";
@@ -171,7 +169,6 @@ export async function toggleObjectiveAction(formData: FormData) {
     objectiveId,
     participantId: participant.id,
   });
-  revalidatePath(returnPath);
   redirect(returnPath);
 }
 
@@ -187,8 +184,6 @@ export async function completeChipAction(formData: FormData) {
     chipId: chip.id,
     toStatus: "completed",
   });
-  revalidatePath(`/chips/${publicCode}`);
-  revalidatePath("/dashboard");
 }
 
 export async function cancelChipAction(formData: FormData) {
@@ -204,8 +199,6 @@ export async function cancelChipAction(formData: FormData) {
     fromStatus: chip.status,
     toStatus: "canceled",
   });
-  revalidatePath(`/chips/${publicCode}`);
-  revalidatePath("/dashboard");
   redirect("/dashboard");
 }
 
@@ -223,9 +216,6 @@ export async function removeParticipantAction(formData: FormData) {
     participantId,
     requesterId: user.id,
   });
-
-  revalidatePath(`/chips/${publicCode}`);
-  revalidatePath("/dashboard");
   redirect(`/chips/${publicCode}`);
 }
 
@@ -242,7 +232,6 @@ export async function updateProfileNameAction(formData: FormData) {
 
   const { updateProfileName } = await import("@/lib/profiles");
   await updateProfileName(user.id, fullName);
-  revalidatePath("/profile");
   redirect("/profile?saved=1");
 }
 
@@ -280,8 +269,6 @@ export async function sendFriendRequestAction(formData: FormData) {
     throw error;
   }
 
-  revalidatePath("/profile");
-  revalidatePath(`/profile/${receiverId}`);
   redirect("/profile?sent=1");
 }
 
@@ -302,7 +289,5 @@ export async function respondFriendRequestAction(formData: FormData) {
     userId: user.id,
     response,
   });
-
-  revalidatePath("/profile");
   redirect("/profile");
 }

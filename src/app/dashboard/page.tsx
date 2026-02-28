@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { signOutAction } from "@/app/actions";
 import { Countdown } from "@/components/countdown";
+import { FormSubmitButton } from "@/components/form-submit-button";
 import { ProgressBar } from "@/components/progress-bar";
 import { ScreenContainer } from "@/components/screen-container";
 import { StatusBadge } from "@/components/status-badge";
@@ -26,9 +27,11 @@ export default async function DashboardPage() {
             Profile
           </Link>
           <form action={signOutAction}>
-            <button type="submit" className="rounded-lg border border-[#cbd5e1] px-3 py-2 text-sm font-semibold">
-              Sign Out
-            </button>
+            <FormSubmitButton
+              idleLabel="Sign Out"
+              pendingLabel="Signing Out..."
+              className="rounded-lg border border-[#cbd5e1] px-3 py-2 text-sm font-semibold"
+            />
           </form>
         </div>
       </header>

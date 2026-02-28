@@ -4,6 +4,7 @@ import {
   sendFriendRequestAction,
   updateProfileNameAction,
 } from "@/app/actions";
+import { FormSubmitButton } from "@/components/form-submit-button";
 import { ScreenContainer } from "@/components/screen-container";
 import { SiteHeader } from "@/components/site-header";
 import {
@@ -66,9 +67,11 @@ export default async function ProfilePage({
               maxLength={80}
             />
           </label>
-          <button type="submit" className="chip-button chip-button-secondary">
-            Save Profile
-          </button>
+          <FormSubmitButton
+            idleLabel="Save Profile"
+            pendingLabel="Saving..."
+            className="chip-button chip-button-secondary"
+          />
         </form>
       </section>
 
@@ -76,9 +79,11 @@ export default async function ProfilePage({
         <h2 className="text-sm font-bold uppercase tracking-wider text-[#0e7490]">Add Friend</h2>
         <form action={sendFriendRequestAction} className="space-y-2">
           <input className="chip-input" name="email" type="email" placeholder="Friend email" required />
-          <button type="submit" className="chip-button">
-            Send Friend Request
-          </button>
+          <FormSubmitButton
+            idleLabel="Send Friend Request"
+            pendingLabel="Sending..."
+            className="chip-button"
+          />
         </form>
       </section>
 
@@ -95,16 +100,20 @@ export default async function ProfilePage({
                   <form action={respondFriendRequestAction}>
                     <input type="hidden" name="requestId" value={request.id} />
                     <input type="hidden" name="response" value="accepted" />
-                    <button className="rounded-lg bg-[#166534] px-2 py-1 text-xs font-semibold text-white" type="submit">
-                      Accept
-                    </button>
+                    <FormSubmitButton
+                      idleLabel="Accept"
+                      pendingLabel="Saving..."
+                      className="rounded-lg bg-[#166534] px-2 py-1 text-xs font-semibold text-white"
+                    />
                   </form>
                   <form action={respondFriendRequestAction}>
                     <input type="hidden" name="requestId" value={request.id} />
                     <input type="hidden" name="response" value="declined" />
-                    <button className="rounded-lg bg-[#e2e8f0] px-2 py-1 text-xs font-semibold" type="submit">
-                      Decline
-                    </button>
+                    <FormSubmitButton
+                      idleLabel="Decline"
+                      pendingLabel="Saving..."
+                      className="rounded-lg bg-[#e2e8f0] px-2 py-1 text-xs font-semibold"
+                    />
                   </form>
                 </div>
               </li>

@@ -4,6 +4,7 @@ import {
   respondFriendRequestAction,
   sendFriendRequestAction,
 } from "@/app/actions";
+import { FormSubmitButton } from "@/components/form-submit-button";
 import { ScreenContainer } from "@/components/screen-container";
 import { SiteHeader } from "@/components/site-header";
 import { getFriendRelation } from "@/lib/friends";
@@ -43,9 +44,7 @@ export default async function PublicProfilePage({
         ) : relation.state === "none" ? (
           <form action={sendFriendRequestAction}>
             <input type="hidden" name="targetUserId" value={profile.id} />
-            <button type="submit" className="chip-button">
-              Add Friend
-            </button>
+            <FormSubmitButton idleLabel="Add Friend" pendingLabel="Sending..." className="chip-button" />
           </form>
         ) : relation.state === "outgoing" ? (
           <p className="rounded-lg bg-[#f8fafc] p-3 text-sm text-[#334155]">Friend request sent.</p>
@@ -56,16 +55,16 @@ export default async function PublicProfilePage({
               <form action={respondFriendRequestAction} className="w-full">
                 <input type="hidden" name="requestId" value={relation.requestId} />
                 <input type="hidden" name="response" value="accepted" />
-                <button type="submit" className="chip-button">
-                  Accept
-                </button>
+                <FormSubmitButton idleLabel="Accept" pendingLabel="Saving..." className="chip-button" />
               </form>
               <form action={respondFriendRequestAction} className="w-full">
                 <input type="hidden" name="requestId" value={relation.requestId} />
                 <input type="hidden" name="response" value="declined" />
-                <button type="submit" className="chip-button chip-button-secondary">
-                  Decline
-                </button>
+                <FormSubmitButton
+                  idleLabel="Decline"
+                  pendingLabel="Saving..."
+                  className="chip-button chip-button-secondary"
+                />
               </form>
             </div>
           </div>
