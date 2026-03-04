@@ -38,6 +38,25 @@ async function ensureFriendsSchema() {
     for each row execute function public.set_updated_at();
   `);
 
+  await db.query(`
+    alter table public.friend_requests enable row level security;
+  `);
+
+  await db.query(`
+    drop policy if exists friend_requests_participant_read on public.friend_requests;
+    create policy friend_requests_participant_read on public.friend_requests
+    for select using (auth.uid() = sender_id or auth.uid() = receiver_id);
+
+    drop policy if exists friend_requests_sender_insert on public.friend_requests;
+    create policy friend_requests_sender_insert on public.friend_requests
+    for insert with check (auth.uid() = sender_id);
+
+    drop policy if exists friend_requests_participant_update on public.friend_requests;
+    create policy friend_requests_participant_update on public.friend_requests
+    for update using (auth.uid() = sender_id or auth.uid() = receiver_id)
+    with check (auth.uid() = sender_id or auth.uid() = receiver_id);
+  `);
+
   schemaEnsured = true;
 }
 
